@@ -19,34 +19,39 @@
 
 package com.sun.pdfview.pattern;
 
-import java.io.IOException;
-import java.util.Map;
-
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFPaint;
+
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * A type 1 (tiling) pattern
  */
 public class PatternType2 extends PDFPattern {
 
-  /** the shader */
+  /**
+   * the shader
+   */
   private PDFShader shader;
 
-  /** Creates a new instance of PatternType1 */
+  /**
+   * Creates a new instance of PatternType1
+   */
   public PatternType2() {
-    super(2);
+    super( 2 );
   }
 
   /**
    * Parse the pattern from the PDFObject
-   *
+   * <p>
    * Note the resources passed in are ignored...
    */
   @Override
-  protected void parse(PDFObject patternObj, Map rsrc) throws IOException
-  {
-    this.shader = PDFShader.getShader(patternObj.getDictRef("Shading"), rsrc);
+  protected void parse( PDFObject patternObj, Map<String, PDFObject> rsrc )
+    throws IOException {
+    this.shader = PDFShader.getShader(
+      patternObj.getDictRef( "Shading" ), rsrc );
   }
 
   /**
@@ -58,7 +63,7 @@ public class PatternType2 extends PDFPattern {
    * @param basePaint the base paint to use, or null if not needed
    */
   @Override
-  public PDFPaint getPaint(PDFPaint basePaint) {
+  public PDFPaint getPaint( PDFPaint basePaint ) {
     return shader.getPaint();
   }
 }

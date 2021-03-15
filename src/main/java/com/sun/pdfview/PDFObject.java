@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.Map.Entry;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptySet;
@@ -48,7 +49,7 @@ import static java.util.Collections.emptySet;
  *
  * @author Mike Wessler
  */
-@SuppressWarnings( "unused" )
+@SuppressWarnings( {"unused", "rawtypes"} )
 public class PDFObject {
 
   /**
@@ -561,7 +562,8 @@ public class PDFObject {
    * this object is not a DICTIONARY or a STREAM, returns an
    * Iterator over the empty list.
    */
-  public Iterator getDictKeys() throws IOException {
+  @SuppressWarnings( "unchecked" )
+  public Iterator<String> getDictKeys() throws IOException {
     if( type == INDIRECT ) {
       return dereference().getDictKeys();
     }
@@ -577,6 +579,7 @@ public class PDFObject {
    * get the dictionary as a HashMap.  If this isn't a DICTIONARY
    * or a STREAM, returns null
    */
+  @SuppressWarnings( "unchecked" )
   public Map<String, PDFObject> getDictionary() throws IOException {
     if( type == INDIRECT ) {
       return dereference().getDictionary();
@@ -733,7 +736,7 @@ public class PDFObject {
         sb.append( " dictionary. Keys:" );
         final var hm = (Map) value;
         for( final var o : hm.entrySet() ) {
-          final var entry = (Map.Entry) o;
+          final var entry = (Entry) o;
           sb.append( "\n   " )
             .append( entry.getKey() )
             .append( "  " )

@@ -22,13 +22,15 @@ package com.sun.pdfview;
 
 import java.awt.image.BufferedImage;
 import java.lang.ref.SoftReference;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import static java.util.Collections.synchronizedMap;
 
 /**
  * A cache of PDF pages and images.
  */
+@SuppressWarnings( "unused" )
 public class Cache {
 
   /**
@@ -40,7 +42,7 @@ public class Cache {
    * Creates a new instance of a Cache
    */
   public Cache() {
-    pages = Collections.synchronizedMap( new HashMap<>() );
+    pages = synchronizedMap( new HashMap<>() );
   }
 
   /**
@@ -250,11 +252,11 @@ public class Cache {
 
     PageRecord pageRec = getPageRecord( pageNumber );
     if( pageRec != null ) {
-      SoftReference ref = pageRec.images.get( info );
+      final var ref = pageRec.images.get( info );
       if( ref != null ) {
         String val = (ref.get() == null) ? " not in " : " in ";
         // System.out.println("Image on page " + pageNumber + val + " cache");
-        return (Record) ref.get();
+        return ref.get();
       }
     }
 
@@ -270,12 +272,13 @@ public class Cache {
     // first find the relevant page record
     Integer pageNumber = page.getPageNumber();
     PageRecord pageRec = getPageRecord( pageNumber );
+
     if( pageRec != null ) {
       final var ref = pageRec.images.remove( info );
-      if( ref != null ) {
-        return (Record) ref.get();
-      }
 
+      if( ref != null ) {
+        return ref.get();
+      }
     }
 
     return null;
@@ -310,7 +313,7 @@ public class Cache {
      * create a new page record
      */
     public PageRecord() {
-      images = Collections.synchronizedMap( new HashMap<>() );
+      images = synchronizedMap( new HashMap<>() );
     }
   }
 }

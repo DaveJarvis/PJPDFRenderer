@@ -33,6 +33,7 @@ import com.sun.pdfview.PDFParseException;
  * a Font definition for PDF files
  * @author Mike Wessler
  */
+@SuppressWarnings( "unused" )
 public abstract class PDFFont {
 
     /** the font SubType of this font */
@@ -110,7 +111,7 @@ public abstract class PDFFont {
 
         String baseFont = null;
         PDFFontEncoding encoding = null;
-        PDFFontDescriptor descriptor = null;
+        PDFFontDescriptor descriptor;
 
         String subType = obj.getDictRef("Subtype").getStringValue();
         if (subType == null) {
@@ -139,43 +140,49 @@ public abstract class PDFFont {
             descriptor = new PDFFontDescriptor(baseFont);
         }
 
-        if (subType.equals("Type0")) {
-            font = new Type0Font(baseFont, obj, descriptor);
-        } else if (subType.equals("Type1")) {
-            // load a type1 font
-            if (descriptor == null) {
-                // it's one of the built-in fonts
-                font = new BuiltinFont(baseFont, obj);
-            } else if (descriptor.getFontFile() != null) {
-                // it's a Type1 font, included.
-                font = new Type1Font(baseFont, obj, descriptor);
-            } else if (descriptor.getFontFile3() != null) {
-                // it's a CFF (Type1C) font
-                font = new Type1CFont(baseFont, obj, descriptor);
-            } else {
-                // no font info. Fake it based on the FontDescriptor
-                font = new BuiltinFont(baseFont, obj, descriptor);
-            }
-        } else if (subType.equals("TrueType")) {
-            if (descriptor.getFontFile2() != null) {
-                // load a TrueType font
-                font = new TTFFont(baseFont, obj, descriptor);
-            } else {
-                // fake it with a built-in font
-                font = new BuiltinFont(baseFont, obj, descriptor);
-            }
-        } else if (subType.equals("Type3")) {
-            // load a type 3 font
-            font = new Type3Font(baseFont, obj, resources, descriptor);
-        } else if (subType.equals("CIDFontType2")) {
-            font = new CIDFontType2(baseFont, obj, descriptor);
-        } else if (subType.equals("CIDFontType0")) {
-            font = new CIDFontType2(baseFont, obj, descriptor);
-//            font = new CIDFontType0(baseFont, obj, descriptor);
-//            throw new IOException ("CIDFontType0 is unimplemented. " + obj);
-        } else {
-            throw new PDFParseException("Don't know how to handle a '" +
-                    subType + "' font");
+        switch( subType ) {
+            case "Type0":
+                font = new Type0Font( baseFont, obj, descriptor );
+                break;
+            case "Type1":
+                if( descriptor == null ) {
+                    // it's one of the built-in fonts
+                    font = new BuiltinFont( baseFont, obj );
+                }
+                else if( descriptor.getFontFile() != null ) {
+                    // it's a Type1 font, included.
+                    font = new Type1Font( baseFont, obj, descriptor );
+                }
+                else if( descriptor.getFontFile3() != null ) {
+                    // it's a CFF (Type1C) font
+                    font = new Type1CFont( baseFont, obj, descriptor );
+                }
+                else {
+                    // no font info. Fake it based on the FontDescriptor
+                    font = new BuiltinFont( baseFont, obj, descriptor );
+                }
+                break;
+            case "TrueType":
+                if( descriptor.getFontFile2() != null ) {
+                    // load a TrueType font
+                    font = new TTFFont( baseFont, obj, descriptor );
+                }
+                else {
+                    // fake it with a built-in font
+                    font = new BuiltinFont( baseFont, obj, descriptor );
+                }
+                break;
+            case "Type3":
+                // load a type 3 font
+                font = new Type3Font( baseFont, obj, resources, descriptor );
+                break;
+            case "CIDFontType2":
+            case "CIDFontType0":
+                font = new CIDFontType2( baseFont, obj, descriptor );
+                break;
+            default:
+                throw new PDFParseException(
+                  "Unsupported font subtype: '" + subType + "'" );
         }
 
         font.setSubtype(subType);
@@ -266,7 +273,7 @@ public abstract class PDFFont {
      * @param text the text to translate into glyphs
      */
     public List<PDFGlyph> getGlyphs(String text) {
-        List<PDFGlyph> outList = null;
+        List<PDFGlyph> outList;
 
         // if we have an encoding, use it to get the commands
         if (encoding != null) {
@@ -274,7 +281,7 @@ public abstract class PDFFont {
         } else {
             // use the default mapping
             char[] arry = text.toCharArray();
-            outList = new ArrayList<PDFGlyph>(arry.length);
+            outList = new ArrayList<>( arry.length );
 
             for( final char c : arry ) {
                 // only look at 2 bytes when there is no encoding
@@ -296,11 +303,11 @@ public abstract class PDFFont {
      */
     public PDFGlyph getCachedGlyph(char src, String name) {
         if (charCache == null) {
-            charCache = new HashMap<Character,PDFGlyph>();
+            charCache = new HashMap<>();
         }
 
         // try the cache
-        PDFGlyph glyph = (PDFGlyph) charCache.get( src );
+        PDFGlyph glyph = charCache.get( src );
 
         // if it's not there, add it to the cache
         if (glyph == null) {

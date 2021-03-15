@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+import static java.util.Collections.emptyIterator;
+
 /**
  * An encapsulation of a .pdf file. The methods of this class can parse the
  * contents of a PDF file, but those methods are hidden. Instead, the public
@@ -64,16 +66,16 @@ public class PDFFile {
   /**
    * the root PDFObject, as specified in the PDF file
    */
-  PDFObject root = null;
+  PDFObject root;
   /**
    * the Encrypt PDFObject, from the trailer
    */
-  PDFObject encrypt = null;
+  PDFObject encrypt;
 
   /**
    * The Info PDFPbject, from the trailer, for simple metadata
    */
-  PDFObject info = null;
+  PDFObject info;
 
   /**
    * a mapping of page numbers to parsed PDF commands
@@ -227,14 +229,14 @@ public class PDFFile {
    * @return the keys present into the Info dictionary
    * @throws IOException if the keys cannot be read
    */
+  @SuppressWarnings( "unchecked" )
   public Iterator<String> getMetadataKeys()
     throws IOException {
     if( info != null ) {
       return info.getDictKeys();
     }
-    else {
-      return Collections.emptyIterator();
-    }
+
+    return emptyIterator();
   }
 
 
@@ -1137,9 +1139,8 @@ public class PDFFile {
       else {
         break;
       }
+
       // see if we have an optional Version entry
-
-
       if( root.getDictRef( "Version" ) != null ) {
         processVersion( root.getDictRef( "Version" ).getStringValue() );
       }

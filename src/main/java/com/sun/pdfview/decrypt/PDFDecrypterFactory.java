@@ -24,7 +24,6 @@ import com.sun.pdfview.PDFParseException;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -35,7 +34,7 @@ import java.util.Map;
  * 40-128 bits; esentially, password-protected documents with compatibility
  * up to Acrobat 8.
  *
- * @See "PDF Reference version 1.7, section 3.5: Encryption"
+ * @see "PDF Reference version 1.7, section 3.5: Encryption"
  * @author Luke Kirby
  */
 public class PDFDecrypterFactory {
@@ -67,16 +66,13 @@ public class PDFDecrypterFactory {
      *  is not supported by the environment in which the code is executing
      * @throws EncryptionUnsupportedByProductException if PDFRenderer does
      *  not currently support the specified encryption
-     * @throws PDFAuthenticationFailureException if the supplied password
-     *  was not able to 
      */
     public static PDFDecrypter createDecryptor
             (PDFObject encryptDict, PDFObject documentId, PDFPassword password)
             throws
             IOException,
             EncryptionUnsupportedByPlatformException,
-            EncryptionUnsupportedByProductException,
-            PDFAuthenticationFailureException {
+            EncryptionUnsupportedByProductException {
 
         // none of the classes beyond us want to see a null PDFPassword
         password = PDFPassword.nonNullPassword(password);
@@ -127,8 +123,6 @@ public class PDFDecrypterFactory {
      * @param v the version of encryption being used; must be at least 4
      * @return the decrypter corresponding to the scheme expressed in
      * encryptDict
-     * @throws PDFAuthenticationFailureException if the provided password
-     *  does not decrypt this document
      * @throws IOException if there is a problem reading the PDF, an invalid
      *  document structure, or an inability to obtain the required ciphers
      *  from the platform's JCE
@@ -143,7 +137,6 @@ public class PDFDecrypterFactory {
             PDFPassword password,
             int v)
             throws
-            PDFAuthenticationFailureException,
             IOException,
             EncryptionUnsupportedByPlatformException,
             EncryptionUnsupportedByProductException {
@@ -165,14 +158,13 @@ public class PDFDecrypterFactory {
 
         // Assemble decrypters for each filter in the
         // crypt filter (CF) dictionary
-        final Map<String, PDFDecrypter> cfDecrypters =
-                new HashMap<String, PDFDecrypter>();
+        final Map<String, PDFDecrypter> cfDecrypters = new HashMap<>();
         final PDFObject cfDict = encryptDict.getDictRef("CF");
         if (cfDict == null) {
             throw new PDFParseException(
                     "No CF value present in Encrypt dict for V4 encryption");
         }
-        final Iterator<String> cfNameIt = cfDict.getDictKeys();
+        final var cfNameIt = cfDict.getDictKeys();
         while (cfNameIt.hasNext()) {
             final String cfName = cfNameIt.next();
             final PDFObject cryptFilter = cfDict.getDictRef(cfName);
@@ -241,8 +233,6 @@ public class PDFDecrypterFactory {
      * @param encryptMetadata whether metadata is being encrypted
      * @param encryptionAlgorithm, the encryption algorithm
      * @return the decrypter
-     * @throws PDFAuthenticationFailureException if the provided password
-     *  is not the one expressed by the encryption dictionary
      * @throws IOException if there is a problem reading the PDF content,
      *  if the content does not comply with the PDF specification
      * @throws EncryptionUnsupportedByPlatformException if the encryption
@@ -259,7 +249,6 @@ public class PDFDecrypterFactory {
             boolean encryptMetadata,
             StandardDecrypter.EncryptionAlgorithm encryptionAlgorithm)
             throws
-            PDFAuthenticationFailureException,
             IOException,
             EncryptionUnsupportedByPlatformException,
             EncryptionUnsupportedByProductException {

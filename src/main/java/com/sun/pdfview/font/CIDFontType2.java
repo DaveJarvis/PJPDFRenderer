@@ -33,6 +33,7 @@ import com.sun.pdfview.PDFObject;
  *
  * @author Jonathan Kaplan
  */
+@SuppressWarnings( "unused" )
 public class CIDFontType2 extends TTFFont {
 
     /**
@@ -101,7 +102,7 @@ public class CIDFontType2 extends TTFFont {
         if (widthObj != null) {
 
             // initialize the widths array
-            widths = new HashMap<Character, Float>();
+            widths = new HashMap<>();
 
             // parse the width array
             widthArray = widthObj.getArray();
@@ -111,34 +112,37 @@ public class CIDFontType2 extends TTFFont {
              *   <startIndex> [ array of values ]
              * we use the entryIdx to differentitate between them
              */
-            for (int i = 0; i < widthArray.length; i++) {
-                if (entryIdx == 0) {
+            for( final PDFObject pdfObject : widthArray ) {
+                if( entryIdx == 0 ) {
                     // first value in an entry.  Just store it
-                    first = widthArray[i].getIntValue();
-                } else if (entryIdx == 1) {
+                    first = pdfObject.getIntValue();
+                }
+                else if( entryIdx == 1 ) {
                     // second value -- is it an int or array?
-                    if (widthArray[i].getType() == PDFObject.ARRAY) {
+                    if( pdfObject.getType() == PDFObject.ARRAY ) {
                         // add all the entries in the array to the width array
-                        PDFObject[] entries = widthArray[i].getArray();
-                        for (int c = 0; c < entries.length; c++) {
-                            Character key = new Character((char) (c + first));
+                        PDFObject[] entries = pdfObject.getArray();
+                        for( int c = 0; c < entries.length; c++ ) {
+                            Character key = (char) (c + first);
 
                             // value is width / default width
-                            float value = entries[c].getIntValue();
-                            widths.put(key, new Float(value));
+                            float value = entries[ c ].getIntValue();
+                            widths.put( key, value );
                         }
                         // all done
                         entryIdx = -1;
-                    } else {
-                        last = widthArray[i].getIntValue();
                     }
-                } else {
+                    else {
+                        last = pdfObject.getIntValue();
+                    }
+                }
+                else {
                     // third value.  Set a range
-                    int value = widthArray[i].getIntValue();
+                    int value = pdfObject.getIntValue();
 
                     // set the range
-                    for (int c = first; c <= last; c++) {
-                        widths.put(new Character((char) c), new Float(value));
+                    for( int c = first; c <= last; c++ ) {
+                        widths.put( (char) c, (float) value );
                     }
 
                     // all done
@@ -160,7 +164,7 @@ public class CIDFontType2 extends TTFFont {
         if (widthObj != null) {
 
             // initialize the widths array
-            widthsVertical = new HashMap<Character, Float>();
+            widthsVertical = new HashMap<>();
 
             // parse the width2 array
             widthArray = widthObj.getArray();
@@ -174,34 +178,38 @@ public class CIDFontType2 extends TTFFont {
             first = 0;
             last = 0;
 
-            for (int i = 0; i < widthArray.length; i++) {
-                if (entryIdx == 0) {
+            for( final PDFObject pdfObject : widthArray ) {
+                if( entryIdx == 0 ) {
                     // first value in an entry.  Just store it
-                    first = widthArray[i].getIntValue();
-                } else if (entryIdx == 1) {
+                    first = pdfObject.getIntValue();
+                }
+                else if( entryIdx == 1 ) {
                     // second value -- is it an int or array?
-                    if (widthArray[i].getType() == PDFObject.ARRAY) {
+                    if( pdfObject.getType() == PDFObject.ARRAY ) {
                         // add all the entries in the array to the width array
-                        PDFObject[] entries = widthArray[i].getArray();
-                        for (int c = 0; c < entries.length; c++) {
-                            Character key = new Character((char) (c + first));
+                        PDFObject[] entries = pdfObject.getArray();
+                        for( int c = 0; c < entries.length; c++ ) {
+                            Character key = (char) (c + first);
 
                             // value is width / default width
-                            float value = entries[c].getIntValue();
-                            widthsVertical.put(key, new Float(value));
+                            float value = entries[ c ].getIntValue();
+                            widthsVertical.put( key, value );
                         }
                         // all done
                         entryIdx = -1;
-                    } else {
-                        last = widthArray[i].getIntValue();
                     }
-                } else {
+                    else {
+                        last = pdfObject.getIntValue();
+                    }
+                }
+                else {
                     // third value.  Set a range
-                    int value = widthArray[i].getIntValue();
+                    int value = pdfObject.getIntValue();
 
                     // set the range
-                    for (int c = first; c <= last; c++) {
-                        widthsVertical.put(new Character((char) c), new Float(value));
+                    for( int c = first; c <= last; c++ ) {
+                        widthsVertical.put( (char) c,
+                                            (float) value );
                     }
 
                     // all done
@@ -225,12 +233,12 @@ public class CIDFontType2 extends TTFFont {
         if (widths == null) {
             return 1f;
         }
-        Float w = widths.get(new Character(code));
+        Float w = widths.get( code );
         if (w == null) {
             return 1f;
         }
 
-        return w.floatValue() / getDefaultWidth();
+        return w / getDefaultWidth();
     }
 
     /** Get the default vertical width in text space */
@@ -243,12 +251,12 @@ public class CIDFontType2 extends TTFFont {
         if (widthsVertical == null) {
             return 1f;
         }
-        Float w = widthsVertical.get(new Character(code));
+        Float w = widthsVertical.get( code );
         if (w == null) {
             return 1f;
         }
 
-        return w.floatValue() / getDefaultWidth();
+        return w / getDefaultWidth();
     }
 
     /**
@@ -258,7 +266,7 @@ public class CIDFontType2 extends TTFFont {
      */
     @Override
     protected synchronized GeneralPath getOutline(char src, float width) {
-        int glyphId = (int) (src & 0xffff);
+        int glyphId = src & 0xffff;
 
         // check if there is a cidToGidMap
         if (cidToGidMap != null) {
