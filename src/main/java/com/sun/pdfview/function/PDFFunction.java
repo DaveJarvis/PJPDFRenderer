@@ -1,6 +1,4 @@
 /*
- * $Id: PDFFunction.java,v 1.6 2009/03/15 12:33:17 tomoke Exp $
- *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
  * Santa Clara, California 95054, U.S.A. All rights reserved.
  *
@@ -20,10 +18,10 @@
  */
 package com.sun.pdfview.function;
 
+import java.io.IOException;
+
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFParseException;
-
-import java.io.IOException;
 
 /**
  * <p>PDF Functions are defined in the reference as Section 3.9.</p>
@@ -76,7 +74,7 @@ public abstract class PDFFunction {
     public static final int TYPE_4 = 4;
 
     /** the type of this function from the list of known types */
-    private int type;
+    private final int type;
 
     /** the input domain of this function, an array of 2 * <i>m</i> floats */
     private float[] domain;
@@ -171,12 +169,33 @@ public abstract class PDFFunction {
     }
 
     /**
+	 * Perform a linear interpolation.  Given a value x, and two points,
+	 * (xmin, ymin), (xmax, ymax), where xmin <= x <= xmax, calculate a value
+	 * y on the line from (xmin, ymin) to (xmax, ymax).
+	 *
+	 * @param x the x value of the input
+	 * @param xmin the minimum x value
+	 * @param ymin the minimum y value
+	 * @param xmax the maximum x value
+	 * @param ymax the maximum y value
+	 * @return the y value interpolated from the given x
+	 */
+	public static float interpolate(float x, float xmin, float xmax,
+			float ymin, float ymax) {
+			    float value = (ymax - ymin) / (xmax - xmin);
+			    value *= x - xmin;
+			    value += ymin;
+			    
+			    return value;
+			}
+
+	/**
      * Get the type of this function
      *
      * @return one of the types of function (0-4)
      */
     public int getType () {
-        return type;
+        return this.type;
     }
 
     /**
@@ -185,7 +204,7 @@ public abstract class PDFFunction {
      * @return the number of input values expected by this function
      */
     public int getNumInputs () {
-        return (domain.length / 2);
+        return (this.domain.length / 2);
     }
 
     /**
@@ -194,10 +213,10 @@ public abstract class PDFFunction {
      * @return the number of output values this function will return
      */
     public int getNumOutputs () {
-        if (range == null) {
+        if (this.range == null) {
             return 0;
         }
-        return (range.length / 2);
+        return (this.range.length / 2);
     }
 
     /**
@@ -209,7 +228,7 @@ public abstract class PDFFunction {
      * @return the <i>i</i>th entry in the domain array 
      */
     protected float getDomain (int i) {
-        return domain[i];
+        return this.domain[i];
     }
 
     /**
@@ -228,14 +247,14 @@ public abstract class PDFFunction {
      * @return the <i>i</i>th entry in the range array 
      */
     protected float getRange (int i) {
-        if (range == null) {
+        if (this.range == null) {
             if ((i % 2) == 0) {
                 return Float.MIN_VALUE;
             } else {
                 return Float.MAX_VALUE;
             }
         }
-        return range[i];
+        return this.range[i];
     }
 
     /**
@@ -282,7 +301,7 @@ public abstract class PDFFunction {
         }
 
         // check the outputs
-        if (range != null && outputs.length - outputOffset < getNumOutputs ()) {
+        if (this.range != null && outputs.length - outputOffset < getNumOutputs ()) {
             throw new IllegalArgumentException (
                     "Wrong number of outputs for function!");
         }
@@ -298,7 +317,7 @@ public abstract class PDFFunction {
         doFunction (inputs, inputOffset, outputs, outputOffset);
 
         // clip the outputs to range
-        for (int i = 0; range != null && i < outputs.length; i++) {
+        for (int i = 0; this.range != null && i < outputs.length; i++) {
             // clip to range -- min(max(r<i>, range<2i>), range<2i + 1>)
             outputs[i] = Math.max (outputs[i], getRange (2 * i));
             outputs[i] = Math.min (outputs[i], getRange ((2 * i) + 1));

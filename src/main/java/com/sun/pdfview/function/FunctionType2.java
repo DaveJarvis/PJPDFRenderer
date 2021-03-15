@@ -1,6 +1,4 @@
 /*
- * $Id: FunctionType2.java,v 1.2 2007/12/20 18:33:34 rbair Exp $
- *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
  * Santa Clara, California 95054, U.S.A. All rights reserved.
  *
@@ -49,7 +47,8 @@ public class FunctionType2 extends PDFFunction {
     /**
      * Read the zeros, ones and exponent
      */
-    protected void parse(PDFObject obj) throws IOException 
+    @Override
+	protected void parse(PDFObject obj) throws IOException 
     {
         // read the exponent (required)
         PDFObject nObj = obj.getDictRef("N");
@@ -86,7 +85,8 @@ public class FunctionType2 extends PDFFunction {
      * the function value is:
      * C0(j) + x^N * (C1(j) - C0(j))
      */
-    protected void doFunction(float[] inputs, int inputOffset, 
+    @Override
+	protected void doFunction(float[] inputs, int inputOffset, 
                               float[] outputs, int outputOffset)
     {
         // read the input value
@@ -99,11 +99,18 @@ public class FunctionType2 extends PDFFunction {
         }
     }
     
+    @Override
+    public int getNumOutputs()
+    {
+        // For Type 2 functions, the number of outputs is determined by the size of C0 (or C1).
+        return c0.length;
+    }
+    
     /**
      * Get the exponent
      */
     public float getN() {
-        return n;
+        return this.n;
     }
     
     /**
@@ -117,7 +124,7 @@ public class FunctionType2 extends PDFFunction {
      * Get the values at zero
      */
     public float getC0(int index) {
-        return c0[index];
+        return this.c0[index];
     }
     
     /**
@@ -131,7 +138,7 @@ public class FunctionType2 extends PDFFunction {
      * Get the values at one
      */
     public float getC1(int index) {
-        return c1[index];
+        return this.c1[index];
     }
     
     /**

@@ -1,6 +1,4 @@
 /*
- * $Id: FunctionType0.java,v 1.3 2007/12/20 18:33:35 rbair Exp $
- *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
  * Santa Clara, California 95054, U.S.A. All rights reserved.
  *
@@ -24,6 +22,7 @@ package com.sun.pdfview.function;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import com.sun.pdfview.PDFDebugger;
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFParseException;
 
@@ -64,7 +63,8 @@ public class FunctionType0 extends PDFFunction {
     }
     
     /** Read the function information from a PDF Object */
-    protected void parse(PDFObject obj) throws IOException {
+    @Override
+	protected void parse(PDFObject obj) throws IOException {
         // read the size array (required)
         PDFObject sizeObj = obj.getDictRef("Size");
         if (sizeObj == null) {
@@ -126,7 +126,8 @@ public class FunctionType0 extends PDFFunction {
      * @param outputs an array of size <i>n</i> which will be filled
      *                with the output values, or null to return a new array
      */
-    protected void doFunction(float[] inputs, int inputOffset, 
+    @Override
+	protected void doFunction(float[] inputs, int inputOffset, 
                               float[] outputs, int outputOffset) 
     {      
         // calculate the encoded values for each input
@@ -142,7 +143,7 @@ public class FunctionType0 extends PDFFunction {
         
             // clip to size of sample table -- min(max(e<i>, 0), size<i> - 1)
             encoded[i] = Math.max(encoded[i], 0);
-            encoded[i] = Math.min(encoded[i], size[i] - 1);
+            encoded[i] = Math.min(encoded[i], this.size[i] - 1);
         }
         
         // do some magic
@@ -173,7 +174,7 @@ public class FunctionType0 extends PDFFunction {
      * @return the number of samples in the given dimension
      */
     protected int getSize(int dimension) {
-        return size[dimension];
+        return this.size[dimension];
     }
     
     /** 
@@ -188,7 +189,7 @@ public class FunctionType0 extends PDFFunction {
      * Get the number of bits per sample
      */
     protected int getBitsPerSample() {
-        return bitsPerSample;
+        return this.bitsPerSample;
     }
     
     /**
@@ -202,7 +203,7 @@ public class FunctionType0 extends PDFFunction {
      * Get the interpolation type
      */
     protected int getOrder() {
-        return order;
+        return this.order;
     }
     
     /**
@@ -221,8 +222,8 @@ public class FunctionType0 extends PDFFunction {
      * @return the encoding value if the encoding array is set, or the default 
      */
     protected float getEncode(int i) {
-        if (encode != null) {
-            return encode[i];
+        if (this.encode != null) {
+            return this.encode[i];
         } else if ((i % 2) == 0) {
             return 0f;
         } else {
@@ -246,8 +247,8 @@ public class FunctionType0 extends PDFFunction {
      * @return the decoding value if the decoding array is set, or the default 
      */
     protected float getDecode(int i) {
-        if (decode != null) {
-            return decode[i];
+        if (this.decode != null) {
+            return this.decode[i];
         } else {
             return getRange(i);
         }  
@@ -277,7 +278,7 @@ public class FunctionType0 extends PDFFunction {
             mult *= getSize(i);
         }
         
-        return samples[index][od];
+        return this.samples[index][od];
     }
     
     /**
@@ -411,30 +412,8 @@ public class FunctionType0 extends PDFFunction {
      * @param od the output dimension
      */
     private float multicubicInterpolate(float[] encoded, int od) {
-        System.out.println("Cubic interpolation not supported!");
+        PDFDebugger.debug("Cubic interpolation not supported!");
         return multilinearInterpolate(encoded, od);
-    }
-    
-    /**
-     * Perform a linear interpolation.  Given a value x, and two points,
-     * (xmin, ymin), (xmax, ymax), where xmin <= x <= xmax, calculate a value
-     * y on the line from (xmin, ymin) to (xmax, ymax).
-     *
-     * @param x the x value of the input
-     * @param xmin the minimum x value
-     * @param ymin the minimum y value
-     * @param xmax the maximum x value
-     * @param ymax the maximum y value
-     * @return the y value interpolated from the given x
-     */
-    public static float interpolate(float x, float xmin, float xmax,
-                                    float ymin, float ymax)
-    {
-        float value = (ymax - ymin) / (xmax - xmin);
-        value *= x - xmin;
-        value += ymin;
-        
-        return value;
     }
     
     /**
