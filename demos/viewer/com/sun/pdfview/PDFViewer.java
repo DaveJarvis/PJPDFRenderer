@@ -20,59 +20,32 @@
  */
 package com.sun.pdfview;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import com.sun.pdfview.action.GoToAction;
+import com.sun.pdfview.action.PDFAction;
+
+import javax.swing.*;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.filechooser.FileFilter;
+import java.awt.*;
+import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
 import java.awt.print.Book;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
-import java.awt.Toolkit;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.*;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.net.*;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.Box;
-import javax.swing.ButtonGroup;
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTextField;
-import javax.swing.JToggleButton;
-import javax.swing.JToolBar;
-import javax.swing.JTree;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
-import javax.swing.filechooser.FileFilter;
-import javax.swing.SwingUtilities;
 
-import com.sun.pdfview.action.GoToAction;
-import com.sun.pdfview.action.PDFAction;
-import java.lang.reflect.InvocationTargetException;
+import static java.awt.event.KeyEvent.*;
 
 /**
  * A demo PDF Viewer application.
@@ -111,7 +84,7 @@ public class PDFViewer extends JFrame
     /** The page format for printing */
     PageFormat pformat = PrinterJob.getPrinterJob().defaultPage();
     /** true if the thumb panel should exist at all */
-    boolean doThumb = true;
+    boolean doThumb;
     /** flag to indicate when a newly added document has been announced */
     Flag docWaiter;
     /** a thread that pre-loads the next page for faster response */
@@ -128,17 +101,10 @@ public class PDFViewer extends JFrame
      */
     public Icon getIcon(String name) {
         Icon icon = null;
-        URL url = null;
         try {
-            url = getClass().getResource(name);
-
+            URL url = getClass().getResource(name);
             icon = new ImageIcon(url);
-            if (icon == null) {
-                System.out.println("Couldn't find " + url);
-            }
-        } catch (Exception e) {
-            System.out.println("Couldn't find " + getClass().getName() + "/" + name);
-            e.printStackTrace();
+        } catch (Exception ignored ) {
         }
         return icon;
     }
@@ -177,7 +143,7 @@ public class PDFViewer extends JFrame
 
     class ZoomAction extends AbstractAction {
 
-        double zoomfactor = 1.0;
+        double zoomfactor;
 
         public ZoomAction(String name, double factor) {
             super(name);
@@ -223,7 +189,7 @@ public class PDFViewer extends JFrame
         }
 
         public void propertyChange(PropertyChangeEvent evt) {
-            int v = ((Integer) evt.getNewValue()).intValue();
+            int v = (Integer) evt.getNewValue();
             if (v <= 1) {
                 isOpen = false;
                 putValue(ACTION_COMMAND_KEY, "Show thumbnails");
@@ -244,7 +210,7 @@ public class PDFViewer extends JFrame
             getIcon("gfx/fullscrn.gif")) {
 
         public void actionPerformed(ActionEvent evt) {
-            doFullScreen((evt.getModifiers() & evt.SHIFT_MASK) != 0);
+            doFullScreen((evt.getModifiers() & ActionEvent.SHIFT_MASK) != 0);
         }
     };
     Action nextAction = new AbstractAction("Next", getIcon("gfx/next.gif")) {
@@ -297,9 +263,9 @@ public class PDFViewer extends JFrame
         page.addKeyListener(this);
 
         if (doThumb) {
-            split = new JSplitPane(split.HORIZONTAL_SPLIT);
-            split.addPropertyChangeListener(split.DIVIDER_LOCATION_PROPERTY,
-                    thumbAction);
+            split = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT );
+            split.addPropertyChangeListener( JSplitPane.DIVIDER_LOCATION_PROPERTY,
+                                             thumbAction);
             split.setOneTouchExpandable(true);
             thumbs = new ThumbPanel(null);
             thumbscroll = new JScrollPane(thumbs,
@@ -326,12 +292,7 @@ public class PDFViewer extends JFrame
         pageField = new JTextField("-", 3);
         //	pageField.setEnabled(false);
         pageField.setMaximumSize(new Dimension(45, 32));
-        pageField.addActionListener(new ActionListener() {
-
-            public void actionPerformed(ActionEvent evt) {
-                doPageTyped();
-            }
-        });
+        pageField.addActionListener( evt -> doPageTyped() );
         toolbar.add(pageField);
         jb = new JButton(nextAction);
         jb.setText("");
@@ -403,18 +364,11 @@ public class PDFViewer extends JFrame
         int y = (screen.height - getHeight()) / 2;
         setLocation(x, y);
         if (SwingUtilities.isEventDispatchThread()) {
-            show();
+            setVisible(true);
         } else {
             try {
-                SwingUtilities.invokeAndWait(new Runnable() {
-
-                    public void run() {
-                        show();
-                    }
-                });
-            } catch (InvocationTargetException ie) {
-                // ignore
-            } catch (InterruptedException ie) {
+                SwingUtilities.invokeAndWait( () -> setVisible(true) );
+            } catch ( InvocationTargetException | InterruptedException ie) {
                 // ignore
             }
         }
@@ -444,7 +398,6 @@ public class PDFViewer extends JFrame
         } else if (pagenum >= curFile.getNumPages()) {
             pagenum = curFile.getNumPages() - 1;
         }
-//        System.out.println("Going to page " + pagenum);
         curpage = pagenum;
 
         // update the page text field
@@ -505,7 +458,6 @@ public class PDFViewer extends JFrame
             Rectangle2D clip = null;
 
             // wait for the current page
-            //            System.out.println("Preparer waiting for page " + (waitforPage + 1));
             if (fspp != null) {
                 fspp.waitForCurrentPage();
                 size = fspp.getCurSize();
@@ -518,14 +470,13 @@ public class PDFViewer extends JFrame
 
             if (waitforPage == curpage) {
                 // don't go any further if the user changed pages.
-                //                System.out.println("Preparer generating page " + (prepPage + 2));
                 PDFPage pdfPage = curFile.getPage(prepPage + 1, true);
                 if (pdfPage != null && waitforPage == curpage) {
                     // don't go any further if the user changed pages
-                    //                    System.out.println("Generating image for page " + (prepPage + 2));
-
-                    pdfPage.getImage(size.width, size.height, clip, null, true, true);
-                //		    System.out.println("Generated image for page "+ (prepPage+2));
+                    if( size != null ) {
+                        pdfPage.getImage(size.width, size.height, clip, null,
+                                             true, true);
+                    }
                 }
             }
         }
@@ -556,9 +507,6 @@ public class PDFViewer extends JFrame
     /**
      * open a URL to a PDF file. The file is read in and processed
      * with an in-memory buffer.
-     *
-     * @param url
-     * @throws java.io.IOException
      */
     public void openFile(URL url) throws IOException {
         URLConnection urlConnection = url.openConnection();
@@ -589,7 +537,6 @@ public class PDFViewer extends JFrame
      * is closed.</p>
      *
      * @param file the file to open
-     * @throws IOException
      */
     public void openFile(File file) throws IOException {
         // first open the file for random access
@@ -613,49 +560,35 @@ public class PDFViewer extends JFrame
      *
      * @param file the file to open
      */
-    public void openFileUnMapped(File file) throws IOException {
-        DataInputStream istr = null;
-        try {
+    public void openFileUnMapped(File file) {
+        try( DataInputStream istr = new DataInputStream( new FileInputStream( file ) ) ) {
             //load a pdf from a byte buffer
             // avoid using a RandomAccessFile but fill a ByteBuffer directly
-            istr = new DataInputStream(new FileInputStream(file));
             long len = file.length();
-            if (len > Integer.MAX_VALUE) {
-                throw new IOException("File too long to decode: " + file.getName());
+            if( len > Integer.MAX_VALUE ) {
+                throw new IOException( "File too long to decode: " + file.getName() );
             }
             int contentLength = (int) len;
-            byte[] byteBuf = new byte[contentLength];
+            byte[] byteBuf = new byte[ contentLength ];
             int offset = 0;
             int read = 0;
-            while (read >= 0) {
-                read = istr.read(byteBuf, offset, contentLength - offset);
-                if (read > 0) {
+            while( read >= 0 ) {
+                read = istr.read( byteBuf, offset, contentLength - offset );
+                if( read > 0 ) {
                     offset += read;
                 }
             }
-            ByteBuffer buf = ByteBuffer.allocate(contentLength);
-            buf.put(byteBuf);
-            openPDFByteBuffer(buf, file.getPath(), file.getName());
-        } catch (FileNotFoundException fnfe) {
+            ByteBuffer buf = ByteBuffer.allocate( contentLength );
+            buf.put( byteBuf );
+            openPDFByteBuffer( buf, file.getPath(), file.getName() );
+        } catch( IOException fnfe ) {
             fnfe.printStackTrace();
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-        } finally {
-            if (istr != null) {
-                try {
-                    istr.close();
-                } catch (Exception e) {
-                    // ignore error on close
-                }
-            }
         }
+        // ignore error on close
     }
 
     /**
      * open the ByteBuffer data as a PDFFile and start to process it.
-     *
-     * @param buf
-     * @param path
      */
     private void openPDFByteBuffer(ByteBuffer buf, String path, String name) {
 
@@ -693,8 +626,9 @@ public class PDFViewer extends JFrame
         // if the PDF has an outline, display it.
         try {
             outline = curFile.getOutline();
-        } catch (IOException ioe) {
+        } catch (IOException ignored ) {
         }
+
         if (outline != null) {
             if (outline.getChildCount() > 0) {
                 olf = new JDialog(this, "Outline");
@@ -774,7 +708,6 @@ public class PDFViewer extends JFrame
      */
     public void doOpen(String name) {
         try {
-            URL url = new URL(name);
             openFile(new URL(name));
         } catch (IOException ioe) {
             try {
@@ -897,9 +830,9 @@ public class PDFViewer extends JFrame
      */
     public void doThumbs(boolean show) {
         if (show) {
-            split.setDividerLocation((int) thumbs.getPreferredSize().width +
-                    (int) thumbscroll.getVerticalScrollBar().
-                    getWidth() + 4);
+            split.setDividerLocation( thumbs.getPreferredSize().width +
+                                       thumbscroll.getVerticalScrollBar().
+                                       getWidth() + 4);
         } else {
             split.setDividerLocation(0);
         }
@@ -917,8 +850,6 @@ public class PDFViewer extends JFrame
 
     public void doZoom(double factor) {
     }
-    //    public void doOpenMeetingDoc(DocumentInfo doc) {
-    //    }
 
     /**
      * Goes to the next page
@@ -955,7 +886,7 @@ public class PDFViewer extends JFrame
         int pagenum = -1;
         try {
             pagenum = Integer.parseInt(pageField.getText()) - 1;
-        } catch (NumberFormatException nfe) {
+        } catch (NumberFormatException ignored ) {
         }
         if (pagenum >= curFile.getNumPages()) {
             pagenum = curFile.getNumPages() - 1;
@@ -1013,21 +944,24 @@ public class PDFViewer extends JFrame
         }
     }
 
-    public static void main(String args[]) {
+    public static void main( String[] args ) {
         String fileName = null;
         boolean useThumbs = true;
 
-        for (int i = 0; i < args.length; i++) {
-            if (args[i].equalsIgnoreCase("-noThumb")) {
+        for( final String arg : args ) {
+            if( arg.equalsIgnoreCase( "-noThumb" ) ) {
                 useThumbs = false;
-            } else if (args[i].equalsIgnoreCase("-help") ||
-                    args[i].equalsIgnoreCase("-h") ||
-                    args[i].equalsIgnoreCase("-?")) {
-                System.out.println("java com.sun.awc.PDFViewer [flags] [file]");
-                System.out.println("flags: [-noThumb] [-help or -h or -?]");
-                System.exit(0);
-            } else {
-                fileName = args[i];
+            }
+            else if( arg.equalsIgnoreCase( "-help" ) ||
+              arg.equalsIgnoreCase( "-h" ) ||
+              arg.equalsIgnoreCase( "-?" ) ) {
+                System.out.println( "java com.sun.awc.PDFViewer [flags] " +
+                                      "[file]" );
+                System.out.println( "flags: [-noThumb] [-help or -h or -?]" );
+                System.exit( 0 );
+            }
+            else {
+                fileName = arg;
             }
         }
         // start the viewer
@@ -1043,25 +977,25 @@ public class PDFViewer extends JFrame
      */
     public void keyPressed(KeyEvent evt) {
         int code = evt.getKeyCode();
-        if (code == evt.VK_LEFT) {
+        if (code == VK_LEFT ) {
             doPrev();
-        } else if (code == evt.VK_RIGHT) {
+        } else if (code == VK_RIGHT ) {
             doNext();
-        } else if (code == evt.VK_UP) {
+        } else if (code == VK_UP ) {
             doPrev();
-        } else if (code == evt.VK_DOWN) {
+        } else if (code == VK_DOWN ) {
             doNext();
-        } else if (code == evt.VK_HOME) {
+        } else if (code == VK_HOME ) {
             doFirst();
-        } else if (code == evt.VK_END) {
+        } else if (code == VK_END ) {
             doLast();
-        } else if (code == evt.VK_PAGE_UP) {
+        } else if (code == VK_PAGE_UP ) {
             doPrev();
-        } else if (code == evt.VK_PAGE_DOWN) {
+        } else if (code == VK_PAGE_DOWN ) {
             doNext();
-        } else if (code == evt.VK_SPACE) {
+        } else if (code == VK_SPACE ) {
             doNext();
-        } else if (code == evt.VK_ESCAPE) {
+        } else if (code == VK_ESCAPE ) {
             setFullScreenMode(false, false);
         }
     }
@@ -1100,7 +1034,7 @@ public class PDFViewer extends JFrame
             while (now < then) {
                 try {
                     Thread.sleep(timeout - now);
-                } catch (InterruptedException ie) {
+                } catch (InterruptedException ignored ) {
                 }
                 synchronized (this) {
                     now = System.currentTimeMillis();

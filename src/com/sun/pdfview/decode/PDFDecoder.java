@@ -55,8 +55,8 @@ public class PDFDecoder {
             return dict.getDecrypter().decryptBuffer(null, dict, streamBuf);
         } else {
             // apply filters
-            PDFObject ary[];
-            PDFObject params[];
+            PDFObject[] ary;
+            PDFObject[] params;
 	    if (filter.getType() == PDFObject.NAME) {
                 ary = new PDFObject[1];
                 ary[0] = filter;

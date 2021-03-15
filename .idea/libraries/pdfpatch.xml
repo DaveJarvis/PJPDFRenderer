@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="pdfpatch">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/tests/samples/issue63/pdfpatch.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

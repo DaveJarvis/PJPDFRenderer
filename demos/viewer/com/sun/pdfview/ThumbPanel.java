@@ -144,23 +144,14 @@ public class ThumbPanel extends JPanel
             // build the page
             try {
                 int pagetoread = workingon + 1;
-                //		int pagetoread= 1;
-//		System.out.println("Read page: " + pagetoread);
                 PDFPage p = file.getPage(pagetoread, true);
 
                 int wid = (int) Math.ceil((lineheight - border) * p.getAspectRatio());
-                //		if (!p.isFinished()) {
-                //		    System.out.println("Page not finished!");
-                //		    p.waitForFinish();
-                //		}
-                //		flag.clear();
-                //		int pagetowrite= 0;
-                int pagetowrite = workingon;
 
                 Image i = p.getImage(wid, (lineheight - border), null, this, true, true);
 
                 // images[0] = i;
-                images[pagetowrite] = i;
+                images[ workingon ] = i;
 
                 //		flag.waitForFlag();
                 if (defaultNotSet) {

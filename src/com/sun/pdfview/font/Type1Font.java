@@ -38,19 +38,19 @@ import com.sun.pdfview.PDFObject;
  */
 public class Type1Font extends OutlineFont {
 
-    String chr2name[];
+    String[] chr2name;
     int password;
-    byte[] subrs[];
+    byte[][] subrs;
     int lenIV;
     Map<String,Object> name2outline;
     Map<String,FlPoint> name2width;
     AffineTransform at;
     /** the Type1 stack of command values */
-    float stack[] = new float[100];
+    float[] stack = new float[100];
     /** the current position in the Type1 stack */
     int sloc = 0;
     /** the stack of postscript commands (used by callothersubr) */
-    float psStack[] = new float[3];
+    float[] psStack = new float[3];
     /** the current position in the postscript stack */
     int psLoc = 0;
 
@@ -68,7 +68,7 @@ public class Type1Font extends OutlineFont {
             // parse that file, filling name2outline and chr2name
             int start = descriptor.getFontFile().getDictRef("Length1").getIntValue();
             int len = descriptor.getFontFile().getDictRef("Length2").getIntValue();
-            byte font[] = descriptor.getFontFile().getStream();
+            byte[] font = descriptor.getFontFile().getStream();
 
             parseFont(font, start, len);
         }
@@ -76,9 +76,9 @@ public class Type1Font extends OutlineFont {
 
     /** Read a font from it's data, start position and length */
     protected void parseFont(byte[] font, int start, int len) {
-        name2width = new HashMap<String,FlPoint>();
+        name2width = new HashMap<>();
 
-        byte data[] = null;
+        byte[] data = null;
 
         if (isASCII(font, start)) {
             byte[] bData = readASCII(font, start, start + len);
@@ -100,18 +100,16 @@ public class Type1Font extends OutlineFont {
         password = 4330;
         int matrixloc = findSlashName(font, "FontMatrix");
         if (matrixloc < 0) {
-            System.out.println("No FontMatrix!");
             at = new AffineTransform(0.001f, 0, 0, 0.001f, 0, 0);
         } else {
             PSParser psp2 = new PSParser(font, matrixloc + 11);
             // read [num num num num num num]
-            float xf[] = psp2.readArray(6);
-            //	    System.out.println("FONT MATRIX: "+xf);
+            float[] xf = psp2.readArray( 6);
             at = new AffineTransform(xf);
         }
 
         subrs = readSubrs(data);
-        name2outline = new TreeMap<String,Object>(readChars(data));
+        name2outline = new TreeMap<>( readChars( data ) );
     // at this point, name2outline holds name -> byte[].
     }
 
@@ -122,7 +120,7 @@ public class Type1Font extends OutlineFont {
      */
     private String[] readEncoding(byte[] d) {
         byte[][] ary = readArray(d, "Encoding", "def");
-        String res[] = new String[256];
+        String[] res = new String[256];
         for (int i = 0; i < ary.length; i++) {
             if (ary[i] != null) {
                 if (ary[i][0] == '/') {
@@ -171,14 +169,14 @@ public class Type1Font extends OutlineFont {
         double val;
         type = psp.readThing();
         if (type.equals("StandardEncoding")) {
-            byte[] stdenc[] = new byte[FontSupport.standardEncoding.length][];
+            byte[][] stdenc = new byte[FontSupport.standardEncoding.length][];
             for (i = 0; i < stdenc.length; i++) {
                 stdenc[i] = FontSupport.getName(FontSupport.standardEncoding[i]).getBytes();
             }
             return stdenc;
         }
         int len = Integer.parseInt(type);
-        byte[] out[] = new byte[len][];
+        byte[][] out = new byte[len][];
         byte[] line;
         while (true) {
             String s = psp.readThing();
@@ -339,9 +337,7 @@ public class Type1Font extends OutlineFont {
                     break;  // leave with the delimiter included
                 }
             }
-            String s = new String(data, start, loc - start);
-            //	    System.out.println("Read: "+s);
-            return s;
+            return new String( data, start, loc - start);
         }
 
         /**
@@ -363,7 +359,7 @@ public class Type1Font extends OutlineFont {
                     thing = thing.substring(0, thing.length() - 1);
                 }
                 if (thing.length() > 0) {
-                    ary[idx++] = Float.valueOf(thing).floatValue();
+                    ary[idx++] = Float.parseFloat( thing );
                 }
             }
             return ary;
@@ -434,7 +430,7 @@ public class Type1Font extends OutlineFont {
      */
     private HashMap<String,byte[]> readChars(byte[] d) {
         // skip thru data until we find "/"+key
-        HashMap<String,byte[]> hm = new HashMap<String,byte[]>();
+        HashMap<String,byte[]> hm = new HashMap<>();
         int i = findSlashName(d, "CharStrings");
         if (i < 0) {
             // not found

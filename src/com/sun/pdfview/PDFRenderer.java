@@ -20,22 +20,15 @@
  */
 package com.sun.pdfview;
 
-import java.awt.AlphaComposite;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.Rectangle;
-import java.awt.RenderingHints;
-import java.awt.Shape;
+import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Stack;
 
@@ -48,6 +41,7 @@ import java.util.Stack;
  * in the PDF Page and draws them to its buffered image.  It then updates any
  * ImageConsumers with the drawn data.
  */
+@SuppressWarnings( "unused" )
 public class PDFRenderer extends BaseWatchable implements Runnable {
 
     /** the page we were generate from */
@@ -57,7 +51,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable {
     /** a weak reference to the image we render into.  For the image
      * to remain available, some other code must retain a strong reference to it.
      */
-    private WeakReference imageRef;
+    private WeakReference<?> imageRef;
     /** the graphics object for use within an iteration.  Note this must be
      * set to null at the end of each iteration, or the image will not be
      * collected
@@ -70,11 +64,11 @@ public class PDFRenderer extends BaseWatchable implements Runnable {
     /** the total region of this image that has been written to */
     private Rectangle2D globalDirtyRegion;
     /** the image observers that will be updated when this image changes */
-    private List<ImageObserver> observers;
+    private final List<ImageObserver> observers;
     /** the last shape we drew (to check for overlaps) */
     private GeneralPath lastShape;
     /** the info about the image, if we need to recreate it */
-    private ImageInfo imageinfo;
+    private final ImageInfo imageinfo;
     /** the next time the image should be notified about updates */
     private long then = 0;
     /** the sum of all the individual dirty regions since the last update */
@@ -98,10 +92,10 @@ public class PDFRenderer extends BaseWatchable implements Runnable {
 
         this.page = page;
         this.imageinfo = imageinfo;
-        this.imageRef = new WeakReference<BufferedImage>(bi);
+        this.imageRef = new WeakReference<>( bi );
 
         // initialize the list of observers
-        observers = new ArrayList<ImageObserver>();
+        observers = new ArrayList<>();
     }
 
     /**
@@ -125,10 +119,9 @@ public class PDFRenderer extends BaseWatchable implements Runnable {
         this.imageinfo = new ImageInfo(imgbounds.width, imgbounds.height,
                 clip, bgColor);
         g.translate(imgbounds.x, imgbounds.y);
-//	System.out.println("Translating by "+imgbounds.x+","+imgbounds.y);
 
         // initialize the list of observers
-        observers = new ArrayList<ImageObserver>();
+        observers = new ArrayList<>();
     }
 
     /**
@@ -165,7 +158,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable {
         state.xform = g.getTransform();
 
         // initialize the stack
-        stack = new Stack<GraphicsState>();
+        stack = new Stack<>();
 
         // initialize the current command
         currentCommand = 0;
@@ -188,7 +181,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable {
      * push() was called.
      */
     public void pop() {
-        state = (GraphicsState) stack.pop();
+        state = stack.pop();
 
         setTransform(state.xform);
         setClip(state.cliprgn);
@@ -214,10 +207,6 @@ public class PDFRenderer extends BaseWatchable implements Runnable {
      * see if we would produce a line that was too small, and if so, scale
      * it up to produce a graphics line of 1 pixel, or so. This matches our
      * output with Adobe Reader.
-     * 
-     * @param g
-     * @param bs
-     * @return
      */
     private BasicStroke autoAdjustStrokeWidth(Graphics2D g, BasicStroke bs) {
         AffineTransform bt = new AffineTransform(g.getTransform());
@@ -232,10 +221,8 @@ public class PDFRenderer extends BaseWatchable implements Runnable {
                         bs.getMiterLimit(),
                         bs.getDashArray(),
                         bs.getDashPhase());
-            } else {
-                // prevent division by a really small number
-                width = 1.0f;
             }
+
         }
         return stroke;
     }
@@ -265,27 +252,19 @@ public class PDFRenderer extends BaseWatchable implements Runnable {
      * draw an image.
      * @param image the image to draw
      */
-    public Rectangle2D drawImage(PDFImage image) {
+    public Rectangle2D drawImage(PDFImage image) throws IOException {
         AffineTransform at = new AffineTransform(1f / image.getWidth(), 0,
                 0, -1f / image.getHeight(),
                 0, 1);
 
         BufferedImage bi = image.getImage();
+
         if (image.isImageMask()) {
             bi = getMaskedImage(bi);
         }
 
-        /*
-        javax.swing.JFrame frame = new javax.swing.JFrame("Original Image");
-        frame.getContentPane().add(new javax.swing.JLabel(new javax.swing.ImageIcon(bi)));
-        frame.pack();
-        frame.show();
-         */
-
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));
-        if (!g.drawImage(bi, at, null)) {
-            System.out.println("Image not completed!");
-        }
+        g.drawImage( bi, at, null );
 
         // get the total transform that was executed
         AffineTransform bt = new AffineTransform(g.getTransform());
@@ -453,7 +432,6 @@ public class PDFRenderer extends BaseWatchable implements Runnable {
             // System.out.println("Late notify");
             observer.imageUpdate(i, ImageObserver.ALLBITS, 0, 0,
                     imageinfo.width, imageinfo.height);
-            return;
         } else {
             // if we're not yet finished, add to the list of observers and
             // notify of the current dirty region
@@ -546,7 +524,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable {
                 return Watchable.STOPPED;
             }
 
-            g = (Graphics2D) bi.createGraphics();
+            g = bi.createGraphics();
         }
 
         // check if there are any commands to parse.  If there aren't,
@@ -685,8 +663,8 @@ public class PDFRenderer extends BaseWatchable implements Runnable {
         }
 
         synchronized (observers) {
-            for (Iterator i = observers.iterator(); i.hasNext();) {
-                ImageObserver observer = (ImageObserver) i.next();
+            for (final var i = observers.iterator(); i.hasNext();) {
+                final var observer = i.next();
 
                 boolean result = observer.imageUpdate(bi, flags,
                         startx, starty,
@@ -752,7 +730,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable {
         return dstImage;
     }
 
-    class GraphicsState implements Cloneable {
+    static class GraphicsState implements Cloneable {
 
         /** the clip region */
         Shape cliprgn;

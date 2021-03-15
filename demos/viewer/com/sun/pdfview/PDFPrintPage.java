@@ -20,22 +20,22 @@
  */
 package com.sun.pdfview;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.awt.geom.*;
-import java.awt.print.*;
 import javax.swing.*;
-import java.nio.channels.FileChannel;
-import java.io.IOException;
-import java.io.FileInputStream;
-import java.nio.ByteBuffer;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.print.*;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
 /**
  * A class representing a print job for a particular PDFFile.  The class
  * maintains a status dialog as it prints, allowing the user to cancel
  * the print job.
  */
+@SuppressWarnings( "unused" )
 public class PDFPrintPage implements Printable {
 
     /** The PDFFile to be printed */
@@ -64,7 +64,8 @@ public class PDFPrintPage implements Printable {
      * @param   setupPaper          true to post a page setup dialog
      * @throws java.io.IOException
      */
-    public void printFile(String filename, boolean setupPaper) throws IOException {
+    public void printFile(String filename, boolean setupPaper)
+      throws IOException, PrinterException {
         File file = new File(filename);
         FileInputStream fis = new FileInputStream(file);
         FileChannel fc = fis.getChannel();
@@ -94,11 +95,7 @@ public class PDFPrintPage implements Printable {
             book.append(pages, pfDefault, pdfFile.getNumPages());
             pjob.setPageable(book);
 
-            try {
-                pjob.print();
-            } catch (PrinterException exc) {
-                System.out.println(exc);
-            }
+            pjob.print();
         }
     }
 

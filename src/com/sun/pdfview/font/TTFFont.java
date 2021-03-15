@@ -80,8 +80,6 @@ public class TTFFont extends OutlineFont {
         } else {
             font = null;
         }
-//        System.out.println ("TTFFont: ttfObj: " + ttfObj + ", fontName: " + fontName);
-
     }
 
     /**
@@ -100,10 +98,10 @@ public class TTFFont extends OutlineFont {
         CMap[] maps = cmap.getCMaps();
 
         // try the maps in order
-        for (int i = 0; i < maps.length; i++) {
-            int idx = maps[i].map(src);
-            if (idx != 0) {
-                return getOutline(idx, width);
+        for( final CMap map : maps ) {
+            int idx = map.map( src );
+            if( idx != 0 ) {
+                return getOutline( idx, width );
             }
         }
 

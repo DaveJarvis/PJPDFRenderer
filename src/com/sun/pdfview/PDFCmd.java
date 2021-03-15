@@ -36,7 +36,7 @@ public abstract class PDFCmd {
      *         or null if no region was touched.  Note this value should be
      *         in the coordinates of the image touched, not the page.
      */
-    public abstract Rectangle2D execute(PDFRenderer state);
+    public abstract Rectangle2D execute(PDFRenderer state) throws Exception;
 
     /**
      * a human readable representation of this command

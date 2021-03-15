@@ -24,14 +24,15 @@ package com.sun.pdfview;
  * An abstract implementation of the watchable interface, that is extended
  * by the parser and renderer to do their thing.
  */
+@SuppressWarnings( "unused" )
 public abstract class BaseWatchable implements Watchable, Runnable {
 
     /** the current status, from the list in Watchable */
     private int status = Watchable.UNKNOWN;
     /** a lock for status-related operations */
-    private Object statusLock = new Object();
+    private final Object statusLock = new Object();
     /** a lock for parsing operations */
-    private Object parserLock = new Object();
+    private final Object parserLock = new Object();
     /** when to stop */
     private Gate gate;
     /** suppress local stack trace on setError. */
@@ -77,8 +78,6 @@ public abstract class BaseWatchable implements Watchable, Runnable {
     }
 
     public void run() {
-        // System.out.println(Thread.currentThread().getName() + " starting");
-
         // call setup once we started
         if (getStatus() == Watchable.NOT_STARTED) {
             setup();
@@ -109,7 +108,6 @@ public abstract class BaseWatchable implements Watchable, Runnable {
                         setError(ex);
                     }
                 } else {
-                    // System.out.println(getName() + " waiting: status = " + getStatusString());
                     // wait for our status to change
                     synchronized (statusLock) {
                         if (!isExecutable()) {
@@ -123,8 +121,6 @@ public abstract class BaseWatchable implements Watchable, Runnable {
                 }
             }
         }
-
-        // System.out.println(Thread.currentThread().getName() + " exiting: status = " + getStatusString());
 
         // call cleanup when we are done
         if (getStatus() == Watchable.COMPLETED ||
@@ -275,8 +271,6 @@ public abstract class BaseWatchable implements Watchable, Runnable {
         synchronized (statusLock) {
             this.status = status;
 
-            // System.out.println(getName() + " status set to " + getStatusString());
-
             statusLock.notifyAll();
         }
     }
@@ -292,8 +286,6 @@ public abstract class BaseWatchable implements Watchable, Runnable {
 
     /**
      * set suppression of stack traces from setError.
-     * 
-     * @param suppressTrace
      */
     public static void setSuppressSetErrorStackTrace(boolean suppressTrace) {
         SuppressSetErrorStackTrace = suppressTrace;
@@ -311,31 +303,22 @@ public abstract class BaseWatchable implements Watchable, Runnable {
     }
 
     private String getStatusString() {
-        switch (getStatus()) {
-            case Watchable.NOT_STARTED:
-                return "Not started";
-            case Watchable.RUNNING:
-                return "Running";
-            case Watchable.NEEDS_DATA:
-                return "Needs Data";
-            case Watchable.PAUSED:
-                return "Paused";
-            case Watchable.STOPPED:
-                return "Stopped";
-            case Watchable.COMPLETED:
-                return "Completed";
-            case Watchable.ERROR:
-                return "Error";
-            default:
-                return "Unknown";
-
-        }
+        return switch( getStatus() ) {
+            case Watchable.NOT_STARTED -> "Not started";
+            case Watchable.RUNNING -> "Running";
+            case Watchable.NEEDS_DATA -> "Needs Data";
+            case Watchable.PAUSED -> "Paused";
+            case Watchable.STOPPED -> "Stopped";
+            case Watchable.COMPLETED -> "Completed";
+            case Watchable.ERROR -> "Error";
+            default -> "Unknown";
+        };
     }
 
     /** A class that lets us give it a target time or number of steps,
      * and will tell us to stop after that much time or that many steps
      */
-    class Gate {
+    static class Gate {
 
         /** whether this is a time-based (true) or step-based (false) gate */
         private boolean timeBased;

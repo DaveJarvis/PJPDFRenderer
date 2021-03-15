@@ -20,22 +20,16 @@
  */
 package com.sun.pdfview;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Image;
+import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A PDFPage encapsulates the parsed commands required to render a
@@ -49,25 +43,26 @@ import java.util.Map;
  *
  * @author Mike Wessler
  */
+@SuppressWarnings( "unused" )
 public class PDFPage {
 
     /** the array of commands.  The length of this array will always
      * be greater than or equal to the actual number of commands. */
-    private List<PDFCmd> commands;
+    private final List<PDFCmd> commands;
     /** whether this page has been finished.  If true, there will be no
      * more commands added to the cmds list. */
     private boolean finished = false;
     /** the page number used to find this page */
-    private int pageNumber;
+    private final int pageNumber;
     /** the bounding box of the page, in page coordinates */
-    private Rectangle2D bbox;
+    private final Rectangle2D bbox;
     /** the rotation of this page, in degrees */
-    private int rotation;
+    private final int rotation;
     /** a map from image info (width, height, clip) to a soft reference to the
     rendered image */
-    private Cache cache;
+    private final Cache cache;
     /** a map from image info to weak references to parsers that are active */
-    private Map<ImageInfo,WeakReference> renderers;
+    private final Map<ImageInfo,WeakReference<?>> renderers;
 
     /**
      * create a PDFPage with dimensions in bbox and rotation.
@@ -102,10 +97,10 @@ public class PDFPage {
         this.bbox = bbox;
 
         // initialize the cache of images and parsers
-        renderers = Collections.synchronizedMap(new HashMap<ImageInfo,WeakReference>());
+        renderers = Collections.synchronizedMap( new HashMap<>());
 
         // initialize the list of commands
-        commands = Collections.synchronizedList(new ArrayList<PDFCmd>(250));
+        commands = Collections.synchronizedList( new ArrayList<>( 250 ));
     }
 
     /**
@@ -214,7 +209,7 @@ public class PDFPage {
                 cache.addImage(this, info, image, renderer);
             }
 
-            renderers.put(info, new WeakReference<PDFRenderer>(renderer));
+            renderers.put(info, new WeakReference<>( renderer ));
         }
 
         // the renderer may be null if we are getting this image from the
@@ -289,21 +284,14 @@ public class PDFPage {
      */
     public AffineTransform getInitialTransform(int width, int height,
             Rectangle2D clip) {
-        AffineTransform at = new AffineTransform();
-        switch (getRotation()) {
-            case 0:
-                at = new AffineTransform(1, 0, 0, -1, 0, height);
-                break;
-            case 90:
-                at = new AffineTransform(0, 1, 1, 0, 0, 0);
-                break;
-            case 180:
-                at = new AffineTransform(-1, 0, 0, 1, width, 0);
-                break;
-            case 270:
-                at = new AffineTransform(0, -1, -1, 0, width, height);
-                break;
-        }
+        new AffineTransform();
+        AffineTransform at = switch( getRotation() ) {
+            case 0 -> new AffineTransform( 1, 0, 0, -1, 0, height );
+            case 90 -> new AffineTransform( 0, 1, 1, 0, 0, 0 );
+            case 180 -> new AffineTransform( -1, 0, 0, 1, width, 0 );
+            case 270 -> new AffineTransform( 0, -1, -1, 0, width, height );
+            default -> new AffineTransform();
+        };
 
         if (clip == null) {
             clip = getBBox();
@@ -349,14 +337,14 @@ public class PDFPage {
     /**
      * get all the commands in the current page starting at the given index
      */
-    public List getCommands(int startIndex) {
+    public List<PDFCmd> getCommands(int startIndex) {
         return getCommands(startIndex, getCommandCount());
     }
 
     /*
      * get the commands in the page within the given start and end indices
      */
-    public List getCommands(int startIndex, int endIndex) {
+    public List<PDFCmd> getCommands(int startIndex, int endIndex) {
         return commands.subList(startIndex, endIndex);
     }
 
@@ -441,7 +429,7 @@ public class PDFPage {
 
         synchronized (renderers) {
             // find our renderer
-            WeakReference rendererRef = renderers.get(info);
+            final var rendererRef = renderers.get(info);
             if (rendererRef != null) {
                 PDFRenderer renderer = (PDFRenderer) rendererRef.get();
                 if (renderer != null) {
@@ -488,9 +476,6 @@ public class PDFPage {
      */
     public void addStrokeWidth(float w) {
         PDFChangeStrokeCmd sc = new PDFChangeStrokeCmd();
-//        if (w == 0) {
-//            w = 0.1f;
-//        }
         sc.setWidth(w);
         addCommand(sc);
     }
@@ -502,18 +487,13 @@ public class PDFPage {
     public void addEndCap(int capstyle) {
         PDFChangeStrokeCmd sc = new PDFChangeStrokeCmd();
 
-        int cap = BasicStroke.CAP_BUTT;
-        switch (capstyle) {
-            case 0:
-                cap = BasicStroke.CAP_BUTT;
-                break;
-            case 1:
-                cap = BasicStroke.CAP_ROUND;
-                break;
-            case 2:
-                cap = BasicStroke.CAP_SQUARE;
-                break;
-        }
+        int cap = switch( capstyle ) {
+            case 1 -> BasicStroke.CAP_ROUND;
+            case 2 -> BasicStroke.CAP_SQUARE;
+
+            // case 0
+            default -> BasicStroke.CAP_BUTT;
+        };
         sc.setEndCap(cap);
 
         addCommand(sc);
@@ -526,18 +506,13 @@ public class PDFPage {
     public void addLineJoin(int joinstyle) {
         PDFChangeStrokeCmd sc = new PDFChangeStrokeCmd();
 
-        int join = BasicStroke.JOIN_MITER;
-        switch (joinstyle) {
-            case 0:
-                join = BasicStroke.JOIN_MITER;
-                break;
-            case 1:
-                join = BasicStroke.JOIN_ROUND;
-                break;
-            case 2:
-                join = BasicStroke.JOIN_BEVEL;
-                break;
-        }
+        int join = switch( joinstyle ) {
+            case 1 -> BasicStroke.JOIN_ROUND;
+            case 2 -> BasicStroke.JOIN_BEVEL;
+
+            // case 0
+            default -> BasicStroke.JOIN_MITER;
+        };
         sc.setLineJoin(join);
 
         addCommand(sc);
@@ -613,15 +588,14 @@ public class PDFPage {
      * Notify all images we know about that a command has been added
      */
     public void updateImages() {
-        for (Iterator i = renderers.values().iterator(); i.hasNext();) {
-            WeakReference ref = (WeakReference) i.next();
-            PDFRenderer renderer = (PDFRenderer) ref.get();
+        for( final var weakReference : renderers.values() ) {
+            final var renderer = (PDFRenderer) weakReference.get();
 
-            if (renderer != null) {
-                if (renderer.getStatus() == Watchable.NEEDS_DATA) {
+            if( renderer != null ) {
+                if( renderer.getStatus() == Watchable.NEEDS_DATA ) {
                     // there are watchers.  Set the state to paused and
                     // let the watcher decide when to start.
-                    renderer.setStatus(Watchable.PAUSED);
+                    renderer.setStatus( Watchable.PAUSED );
                 }
             }
         }
@@ -639,7 +613,8 @@ class PDFImageCmd extends PDFCmd {
         this.image = image;
     }
 
-    public Rectangle2D execute(PDFRenderer state) {
+    @Override
+    public Rectangle2D execute(PDFRenderer state) throws IOException {
         return state.drawImage(image);
     }
 }
@@ -759,11 +734,7 @@ class PDFXformCmd extends PDFCmd {
 
     @Override
     public String getDetails() {
-        StringBuffer buf = new StringBuffer();
-        buf.append("PDFXformCommand: \n");
-        buf.append(at.toString());
-
-        return buf.toString();
+        return "PDFXformCommand: \n" + at.toString();
     }
 }
 
@@ -830,7 +801,7 @@ class PDFChangeStrokeCmd extends PDFCmd {
 
     public String toString(PDFRenderer state) {
         return "STROKE: w=" + w + " cap=" + cap + " join=" + join + " limit=" + limit +
-                " ary=" + ary + " phase=" + phase;
+                " ary=" + Arrays.toString( ary ) + " phase=" + phase;
     }
 }
 

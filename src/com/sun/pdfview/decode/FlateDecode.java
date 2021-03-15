@@ -70,13 +70,10 @@ public class FlateDecode {
             while (!inf.finished()) {
                 read = inf.inflate(decomp);
                 if (read <= 0) {
-//		    System.out.println("Read = " + read + "! Params: " + params);
                     if (inf.needsDictionary()) {
                         throw new PDFParseException("Don't know how to ask for a dictionary in FlateDecode");
                     } else {
-//			System.out.println("Inflate data length=" + buf.remaining());
                         return ByteBuffer.allocate(0);
-                    //			throw new PDFParseException("Inflater wants more data... but it's already here!");
                     }
                 }
                 baos.write(decomp, 0, read);

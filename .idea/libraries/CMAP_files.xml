@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="CMAP files">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/doc/CMAP files/japanese.zip!/" />
+      <root url="jar://$PROJECT_DIR$/doc/CMAP files/korean.zip!/" />
+      <root url="jar://$PROJECT_DIR$/doc/CMAP files/chinese_t.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

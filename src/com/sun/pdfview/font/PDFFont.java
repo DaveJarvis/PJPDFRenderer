@@ -70,7 +70,7 @@ public abstract class PDFFont {
      * Resources = (dictionary)
      */
     public synchronized static PDFFont getFont(PDFObject obj,
-            HashMap<String,PDFObject> resources)
+            Map<String,PDFObject> resources)
             throws IOException {
         // the obj is actually a dictionary containing:
         //    Type (=Font)
@@ -154,7 +154,6 @@ public abstract class PDFFont {
                 font = new Type1CFont(baseFont, obj, descriptor);
             } else {
                 // no font info. Fake it based on the FontDescriptor
-                //		System.out.println("Fakeout native font");
                 font = new BuiltinFont(baseFont, obj, descriptor);
             }
         } else if (subType.equals("TrueType")) {
@@ -277,10 +276,10 @@ public abstract class PDFFont {
             char[] arry = text.toCharArray();
             outList = new ArrayList<PDFGlyph>(arry.length);
 
-            for (int i = 0; i < arry.length; i++) {
+            for( final char c : arry ) {
                 // only look at 2 bytes when there is no encoding
-                char src = (char) (arry[i] & 0xff);
-                outList.add(getCachedGlyph(src, null));
+                char src = (char) (c & 0xff);
+                outList.add( getCachedGlyph( src, null ) );
             }
         }
 
@@ -301,12 +300,12 @@ public abstract class PDFFont {
         }
 
         // try the cache
-        PDFGlyph glyph = (PDFGlyph) charCache.get(new Character(src));
+        PDFGlyph glyph = (PDFGlyph) charCache.get( src );
 
         // if it's not there, add it to the cache
         if (glyph == null) {
             glyph = getGlyph(src, name);
-            charCache.put(new Character(src), glyph);
+            charCache.put( src, glyph);
         }
 
         return glyph;

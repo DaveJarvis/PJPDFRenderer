@@ -109,7 +109,6 @@ public class TestType1CFont extends JPanel implements KeyListener {
             showing = readGlyph((String) charnames.get(charcounter));
         } else {
             char c = evt.getKeyChar();
-            //	System.out.println("Got char: "+name);
             showing = readGlyph(FontSupport.stdNames[FontSupport.standardEncoding[(int) c & 0xff]]);
         }
         repaint();
@@ -124,40 +123,9 @@ public class TestType1CFont extends JPanel implements KeyListener {
         g2.setColor(Color.black);
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        //	System.out.println("Showing="+showing);
         if (showing != null) {
             showing.draw(g2);
         }
-    }
-
-    private void printData() {
-        char[] parts = new char[17];
-        int partsloc = 0;
-        for (int i = 0; i < data.length; i++) {
-            int d = ((int) data[i]) & 0xff;
-            if (d == 0) {
-                parts[partsloc++] = '.';
-            } else if (d < 32 || d >= 127) {
-                parts[partsloc++] = '?';
-            } else {
-                parts[partsloc++] = (char) d;
-            }
-            if (d < 16) {
-                System.out.print("0" + Integer.toHexString(d));
-            } else {
-                System.out.print(Integer.toHexString(d));
-            }
-            if ((i & 15) == 15) {
-                System.out.println("      " + new String(parts));
-                partsloc = 0;
-            } else if ((i & 7) == 7) {
-                System.out.print("  ");
-                parts[partsloc++] = ' ';
-            } else if ((i & 1) == 1) {
-                System.out.print(" ");
-            }
-        }
-        System.out.println();
     }
 
     private int readNext(boolean charstring) {
@@ -191,7 +159,6 @@ public class TestType1CFont extends JPanel implements KeyListener {
             num = -(num - 251) * 256 - (((int) data[pos++]) & 0xff) - 108;
             return type = NUM;
         } else if (!charstring) { // dict shouldn't have a 255 code
-            printData();
             throw new RuntimeException("Got a 255 code while reading dict");
         } else { // num was 255
             fnum = ((((int) data[pos] & 0xff) << 24) |
@@ -521,7 +488,6 @@ public class TestType1CFont extends JPanel implements KeyListener {
         // does this file have more than one font?
         pos = topdicts;
         if (readInt(2) != 1) {
-            printData();
             throw new RuntimeException("More than one font in this file!");
         }
         // read first dict

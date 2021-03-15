@@ -20,12 +20,13 @@
  */
 package com.sun.pdfview.function;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.*;
-
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFParseException;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.HashSet;
+import java.util.LinkedList;
 
 /**
  * <p>A PostScript function is represented as a stream containing code
@@ -40,10 +41,8 @@ public class FunctionType4 extends PDFFunction {
     /** the set of all Operations we support. These operations are defined
      * in Appendix B - Operators.*/
     private static HashSet<Operation> operationSet = null;
-    /** the list of tokens and sub-expressions. */
-    private LinkedList tokens = new LinkedList();
     /** the stack of operations. The stack contents should all be Comparable. */
-    private LinkedList<Object> stack = new LinkedList<Object>();
+    private final LinkedList<Object> stack = new LinkedList<Object>();
 
     /** Creates a new instance of FunctionType4 */
     protected FunctionType4() {
@@ -57,7 +56,7 @@ public class FunctionType4 extends PDFFunction {
      * Initialize the operations that we can perform.
      */
     private void initOperations() {
-        /** these operators consider the left hand arguments as deeper in
+        /* these operators consider the left hand arguments as deeper in
          * the stack than the right hand arguments, thus the right-hand is
          * is the top of the stack and is popped first.
          *
@@ -891,7 +890,7 @@ public class FunctionType4 extends PDFFunction {
     private void readPS(ByteBuffer buf) {
     }
 
-    class Expression extends LinkedList {
+    static class Expression extends LinkedList {
 
         public boolean equals(Object obj) {
             if (obj instanceof Expression) {
@@ -902,9 +901,10 @@ public class FunctionType4 extends PDFFunction {
         }
     }
 
-    abstract class Operation {
+    @SuppressWarnings( "unused" )
+    abstract static class Operation {
 
-        private String operatorName;
+        private final String operatorName;
 
         public Operation(String operatorName) {
             if (operatorName == null) {
@@ -924,9 +924,6 @@ public class FunctionType4 extends PDFFunction {
 
         /**
          * return true if our operator is the same as the supplied one.
-         *
-         * @param obj
-         * @return
          */
         public boolean equals(Object obj) {
             if (obj instanceof Operation) {

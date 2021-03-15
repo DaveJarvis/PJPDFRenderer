@@ -20,15 +20,16 @@
  */
 package com.sun.pdfview.font;
 
+import com.sun.pdfview.PDFObject;
+
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
-
-import com.sun.pdfview.PDFObject;
 
 /**
  *
  * @author  jkaplan
  */
+@SuppressWarnings( "unused" )
 public class PDFFontDescriptor {
 
     /** All glyphs have the same width. */
