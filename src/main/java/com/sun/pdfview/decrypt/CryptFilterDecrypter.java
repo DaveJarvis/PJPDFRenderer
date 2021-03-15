@@ -19,11 +19,11 @@
 
 package com.sun.pdfview.decrypt;
 
-import com.sun.pdfview.PDFObject;
-import com.sun.pdfview.PDFParseException;
-
 import java.nio.ByteBuffer;
 import java.util.Map;
+
+import com.sun.pdfview.PDFObject;
+import com.sun.pdfview.PDFParseException;
 
 /**
  * Implements Version 4 standard decryption, whereby the Encrypt dictionary
@@ -32,18 +32,18 @@ import java.util.Map;
  * the name of the filter to use for streams and the default filter to use
  * for strings is specified. Requests to decode a stream with a named
  * decrypter (typically Identity) instead of the default decrypter
- * are honoured. 
+ * are honoured.
  *
  * @author Luke Kirby
  */
 public class CryptFilterDecrypter implements PDFDecrypter {
 
     /** Maps from crypt filter names to their corresponding decrypters */
-    private Map<String, PDFDecrypter> decrypters;
+    private final Map<String, PDFDecrypter> decrypters;
     /** The default decrypter for stream content */
-    private PDFDecrypter defaultStreamDecrypter;
+    private final PDFDecrypter defaultStreamDecrypter;
     /** The default decrypter for string content */
-    private PDFDecrypter defaultStringDecrypter;
+    private final PDFDecrypter defaultStringDecrypter;
 
     /**
      * Class constructor
@@ -57,31 +57,32 @@ public class CryptFilterDecrypter implements PDFDecrypter {
      *  present in decrypters
      */
     public CryptFilterDecrypter(
-            Map<String, PDFDecrypter> decrypters,
-            String defaultStreamCryptName,
-            String defaultStringCryptName)
-            throws PDFParseException {
+      Map<String, PDFDecrypter> decrypters,
+      String defaultStreamCryptName,
+      String defaultStringCryptName)
+      throws PDFParseException {
 
         this.decrypters = decrypters;
         assert this.decrypters.containsKey("Identity") :
-                "Crypt Filter map does not contain required Identity filter";
+          "Crypt Filter map does not contain required Identity filter";
         defaultStreamDecrypter = this.decrypters.get(defaultStreamCryptName);
         if (defaultStreamDecrypter == null) {
             throw new PDFParseException(
-                    "Unknown crypt filter specified as default for streams: " +
-                            defaultStreamCryptName);
+              "Unknown crypt filter specified as default for streams: " +
+                defaultStreamCryptName);
         }
         defaultStringDecrypter = this.decrypters.get(defaultStringCryptName);
         if (defaultStringDecrypter == null) {
             throw new PDFParseException(
-                    "Unknown crypt filter specified as default for strings: " +
-                            defaultStringCryptName);
+              "Unknown crypt filter specified as default for strings: " +
+                defaultStringCryptName);
         }
     }
 
+    @Override
     public ByteBuffer decryptBuffer(
-            String cryptFilterName, PDFObject streamObj, ByteBuffer streamBuf)
-            throws PDFParseException {
+      String cryptFilterName, PDFObject streamObj, ByteBuffer streamBuf)
+      throws PDFParseException {
         final PDFDecrypter decrypter;
         if (cryptFilterName == null) {
             decrypter = defaultStreamDecrypter;
@@ -89,25 +90,27 @@ public class CryptFilterDecrypter implements PDFDecrypter {
             decrypter = decrypters.get(cryptFilterName);
             if (decrypter == null) {
                 throw new PDFParseException("Unknown CryptFilter: " +
-                        cryptFilterName);
+                                              cryptFilterName);
             }
         }
         return decrypter.decryptBuffer(
-                // elide the filter name to prevent V2 decrypters from
-                // complaining about a crypt filter name
-                null,
-                // if there's a specific crypt filter being used then objNum
-                // and objGen shouldn't contribute to the key, so we
-                // should make sure that no streamObj makes its way through
-                cryptFilterName != null ? null : streamObj,
-                streamBuf);
+          // elide the filter name to prevent V2 decrypters from
+          // complaining about a crypt filter name
+          null,
+          // if there's a specific crypt filter being used then objNum
+          // and objGen shouldn't contribute to the key, so we
+          // should make sure that no streamObj makes its way through
+          cryptFilterName != null ? null : streamObj,
+          streamBuf);
     }
 
+    @Override
     public String decryptString(int objNum, int objGen, String inputBasicString)
-            throws PDFParseException {
+      throws PDFParseException {
         return defaultStringDecrypter.decryptString(objNum, objGen, inputBasicString);
     }
 
+    @Override
     public boolean isEncryptionPresent() {
         for (final PDFDecrypter decrypter : decrypters.values()) {
             if (decrypter.isEncryptionPresent()) {
@@ -117,6 +120,13 @@ public class CryptFilterDecrypter implements PDFDecrypter {
         return false;
     }
 
+    @Override
+    public boolean isEncryptionPresent(String cryptFilterName) {
+        PDFDecrypter decrypter = decrypters.get(cryptFilterName);
+        return decrypter != null && decrypter.isEncryptionPresent(cryptFilterName);
+    }
+
+    @Override
     public boolean isOwnerAuthorised() {
         for (final PDFDecrypter decrypter : decrypters.values()) {
             if (decrypter.isOwnerAuthorised()) {
@@ -125,4 +135,5 @@ public class CryptFilterDecrypter implements PDFDecrypter {
         }
         return false;
     }
+
 }

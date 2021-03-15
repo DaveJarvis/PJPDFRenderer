@@ -20,8 +20,10 @@
  */
 package com.sun.pdfview;
 
+import com.sun.pdfview.colorspace.AlternateColorSpace;
 import com.sun.pdfview.colorspace.IndexedColor;
 import com.sun.pdfview.colorspace.PDFColorSpace;
+import com.sun.pdfview.decode.PDFDecoder;
 import com.sun.pdfview.function.FunctionType0;
 
 import java.awt.*;
@@ -76,10 +78,17 @@ public class PDFImage {
   private final PDFObject imageObj;
 
   /**
+   * true if the image is in encoded in JPEG
+   */
+  private final boolean jpegDecode;
+
+  /**
    * Create an instance of a PDFImage
    */
-  protected PDFImage( PDFObject imageObj ) {
+  protected PDFImage( PDFObject imageObj ) throws IOException {
     this.imageObj = imageObj;
+    this.jpegDecode = PDFDecoder.isLastFilter( imageObj,
+                                               PDFDecoder.DCT_FILTERS );
   }
 
   /**
@@ -89,9 +98,8 @@ public class PDFImage {
    *                  stream
    * @param resources the current resources
    */
-  public static PDFImage createImage( PDFObject obj,
-                                      Map<String, PDFObject> resources )
-    throws IOException {
+  public static PDFImage createImage(
+    PDFObject obj, Map<String, PDFObject> resources ) throws IOException {
     // create the image
     PDFImage image = new PDFImage( obj );
 
@@ -121,7 +129,7 @@ public class PDFImage {
 
       // create the indexed color space for the mask
       // [PATCHED by michal.busta@gmail.com] - default value od Decode
-        // according to PDF spec. is [0, 1]
+      // according to PDF spec. is [0, 1]
       // so the color arry should be:
       Color[] colors = {Color.BLACK, Color.WHITE};
 
@@ -414,8 +422,8 @@ public class PDFImage {
   }
 
   /**
-   * get a Java ColorModel consistent with the current color space,
-   * number of bits per component and decode array
+   * get a Java ColorModel consistent with the current color space, number of
+   * bits per component and decode array
    */
   private ColorModel getColorModel() {
     PDFColorSpace cs = getColorSpace();
@@ -427,7 +435,7 @@ public class PDFImage {
       int num = ics.getCount();
 
       // process the decode array
-      if( decode != null ) {
+      if( this.decode != null ) {
         byte[] normComps = new byte[ components.length ];
 
         // move the components array around
@@ -457,9 +465,12 @@ public class PDFImage {
         components = fewerComps;
         num = correctCount;
       }
-      if( colorKeyMask == null || colorKeyMask.length == 0 ) {
-        return new IndexColorModel( getBitsPerComponent(), num, components,
-                                    0, false );
+      if( this.colorKeyMask == null || this.colorKeyMask.length == 0 ) {
+        return new IndexColorModel( getBitsPerComponent(),
+                                    num,
+                                    components,
+                                    0,
+                                    false );
       }
       else {
         byte[] aComps = new byte[ num * 4 ];
@@ -470,17 +481,38 @@ public class PDFImage {
           aComps[ idx++ ] = components[ (i * 3) + 2 ];
           aComps[ idx++ ] = (byte) 0xFF;
         }
-        for( int i = 0; i < colorKeyMask.length; i += 2 ) {
-          for( int j = colorKeyMask[ i ]; j <= colorKeyMask[ i + 1 ]; j++ ) {
-            aComps[ (j * 4) + 3 ] = 0;    // make transparent
+        for( int i = 0; i < this.colorKeyMask.length; i += 2 ) {
+          for( int j = this.colorKeyMask[ i ]; j <= this.colorKeyMask[ i + 1 ]; j++ ) {
+            aComps[ (j * 4) + 3 ] = 0; // make transparent
           }
         }
-        return new IndexColorModel( getBitsPerComponent(), num, aComps,
-                                    0, true );
+        return new IndexColorModel( getBitsPerComponent(),
+                                    num,
+                                    aComps,
+                                    0,
+                                    true );
       }
     }
+    else if( cs instanceof AlternateColorSpace ) {
+      // ColorSpace altCS = new AltColorSpace(((AlternateColorSpace)
+      // cs).getFunktion(), cs.getColorSpace());
+      ColorSpace altCS = cs.getColorSpace();
+      int[] bits = new int[ altCS.getNumComponents() ];
+      Arrays.fill( bits, getBitsPerComponent() );
+      return new DecodeComponentColorModel( altCS, bits );
+    }
     else {
-      int[] bits = new int[ cs.getNumComponents() ];
+      // If the image is a JPEG, then CMYK color space has been converted to
+      // RGB in DCTDecode
+      if( this.jpegDecode && cs.getColorSpace()
+                               .getType() == ColorSpace.TYPE_CMYK ) {
+        ColorSpace rgbCS = ColorSpace.getInstance( ColorSpace.CS_sRGB );
+        int[] bits = new int[ rgbCS.getNumComponents() ];
+        Arrays.fill( bits, getBitsPerComponent() );
+        return new DecodeComponentColorModel( rgbCS, bits );
+      }
+      ColorSpace colorSpace = cs.getColorSpace();
+      int[] bits = new int[ colorSpace.getNumComponents() ];
       Arrays.fill( bits, getBitsPerComponent() );
 
       return new DecodeComponentColorModel( cs.getColorSpace(), bits );

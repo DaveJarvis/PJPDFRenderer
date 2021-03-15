@@ -75,7 +75,6 @@
 
     -->
     
-    
     <target name="build-for-web">
     <!--
     copy docs to www/demos/latest/docs/
@@ -87,12 +86,8 @@
                 <include name="**"/>
             </fileset>
         </copy>
-        
-        
-        
     </target>
-    
-    
+
     <target name="build-src-bundle">
         <zip destfile="www/demos/latest/PDFRenderer_src.zip">
             <zipfileset dir="." prefix="PDFRenderer_src">
@@ -103,6 +98,5 @@
             </zipfileset>
         </zip>
     </target>
-
 </project>
 

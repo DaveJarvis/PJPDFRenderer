@@ -28,36 +28,47 @@ import java.nio.ByteBuffer;
  * Performs identity decryption; that is, inputs aren't encrypted and
  * are returned right back.
  *
- * @Author Luke Kirby
+ * @author Luke Kirby
  */
 public class IdentityDecrypter implements PDFDecrypter {
 
-    private static IdentityDecrypter INSTANCE = new IdentityDecrypter();
+  private static final IdentityDecrypter INSTANCE = new IdentityDecrypter();
 
-    public ByteBuffer decryptBuffer(String cryptFilterName,
-            PDFObject streamObj, ByteBuffer streamBuf)
-            throws PDFParseException {
+  @Override
+  public ByteBuffer decryptBuffer( String cryptFilterName,
+                                   PDFObject streamObj, ByteBuffer streamBuf )
+    throws PDFParseException {
 
-        if (cryptFilterName != null) {
-            throw new PDFParseException("This Encryption version does not support Crypt filters");
-        }
-
-        return streamBuf;
+    if( cryptFilterName != null ) {
+      throw new PDFParseException(
+        "This Encryption version does not support Crypt filters" );
     }
 
-    public String decryptString(int objNum, int objGen, String inputBasicString) {
-        return inputBasicString;
-    }
+    return streamBuf;
+  }
 
-    public static IdentityDecrypter getInstance() {
-        return INSTANCE;
-    }
+  @Override
+  public String decryptString( int objNum, int objGen,
+                               String inputBasicString ) {
+    return inputBasicString;
+  }
 
-    public boolean isEncryptionPresent() {
-        return false;
-    }
+  public static IdentityDecrypter getInstance() {
+    return INSTANCE;
+  }
 
-    public boolean isOwnerAuthorised() {
-        return false;
-    }
+  @Override
+  public boolean isEncryptionPresent() {
+    return false;
+  }
+
+  @Override
+  public boolean isEncryptionPresent( String cryptFilterName ) {
+    return false;
+  }
+
+  @Override
+  public boolean isOwnerAuthorised() {
+    return false;
+  }
 }

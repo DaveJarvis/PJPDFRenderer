@@ -19,11 +19,11 @@
 
 package com.sun.pdfview.decrypt;
 
+import java.nio.ByteBuffer;
+
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFParseException;
 import com.sun.pdfview.PDFStringUtil;
-
-import java.nio.ByteBuffer;
 
 /**
  * A decrypter decrypts streams and strings in a PDF document. {@link
@@ -60,10 +60,10 @@ public interface PDFDecrypter {
      *  Problems due to incorrect passwords are revealed prior to this point.
      */
     public ByteBuffer decryptBuffer(
-            String cryptFilterName,
-            PDFObject streamObj,
-            ByteBuffer streamBuf)
-            throws PDFParseException;
+      String cryptFilterName,
+      PDFObject streamObj,
+      ByteBuffer streamBuf)
+      throws PDFParseException;
 
     /**
      * Decrypt a {@link PDFStringUtil basic string}.
@@ -76,7 +76,7 @@ public interface PDFDecrypter {
      *  Problems due to incorrect passwords are revealed prior to this point.
      */
     public String decryptString(int objNum, int objGen, String inputBasicString)
-            throws PDFParseException;
+      throws PDFParseException;
 
     /**
      * Determine whether the password known by the decrypter indicates that
@@ -94,4 +94,11 @@ public interface PDFDecrypter {
      * @return whether encryption is present
      */
     public boolean isEncryptionPresent();
+
+    /**
+     * Determines whether decryption applies for a given crypt filter name
+     * @param cryptFilterName the crypt filter name
+     * @return whether the given crypt filter decrypts or not
+     */
+    boolean isEncryptionPresent(String cryptFilterName);
 }

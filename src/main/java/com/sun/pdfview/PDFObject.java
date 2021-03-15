@@ -1,6 +1,4 @@
 /*
- * $Id: PDFObject.java,v 1.8 2009/03/15 20:47:38 tomoke Exp $
- *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
  * Santa Clara, California 95054, U.S.A. All rights reserved.
  *
@@ -27,10 +25,10 @@ import com.sun.pdfview.decrypt.PDFDecrypter;
 import java.io.IOException;
 import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+
+import static java.util.Collections.emptyIterator;
+import static java.util.Collections.emptySet;
 
 /**
  * a class encapsulating all the possibilities of content for
@@ -50,6 +48,7 @@ import java.util.Map;
  *
  * @author Mike Wessler
  */
+@SuppressWarnings( "unused" )
 public class PDFObject {
 
   /**
@@ -115,8 +114,8 @@ public class PDFObject {
    */
   private int type;
   /**
-   * the value of this object. It can be a wide number of things, defined
-   * by type
+   * the value of this object. It can be a wide number of things, defined by
+   * type
    */
   private Object value;
   /**
@@ -126,7 +125,11 @@ public class PDFObject {
   /**
    * a cached version of the decoded stream
    */
-  private SoftReference<Object> decodedStream;
+  private SoftReference<?> decodedStream;
+  /**
+   * The filter limits used to generate the cached decoded stream
+   */
+  private Set<String> decodedStreamFilterLimits = null;
   /**
    * the PDFFile from which this object came, used for
    * dereferences
@@ -137,7 +140,7 @@ public class PDFObject {
    * garbage collected at any time, after which it will
    * have to be rebuilt.
    */
-  private SoftReference<Object> cache;
+  private SoftReference<?> cache;
 
   /**
    * @see #getObjNum()
@@ -217,11 +220,11 @@ public class PDFObject {
     }
     else if( obj instanceof PDFParser.Tok ) {
       PDFParser.Tok tok = (PDFParser.Tok) obj;
-      if( tok.name.equals( "true" ) ) {
+      if( tok.name != null && tok.name.equals( "true" ) ) {
         this.value = Boolean.TRUE;
         this.type = BOOLEAN;
       }
-      else if( tok.name.equals( "false" ) ) {
+      else if( tok.name != null && tok.name.equals( "false" ) ) {
         this.value = Boolean.FALSE;
         this.type = BOOLEAN;
       }
@@ -305,22 +308,16 @@ public class PDFObject {
     }
   }
 
-  /**
-   * get the stream from this object.  Will return null if this
-   * object isn't a STREAM.
-   *
-   * @return the stream, or null, if this isn't a STREAM.
-   */
-  public byte[] getStream() throws IOException {
+  public byte[] getStream( Set<String> filterLimits ) throws IOException {
     if( type == INDIRECT ) {
-      return dereference().getStream();
+      return dereference().getStream( filterLimits );
     }
     else if( type == STREAM && stream != null ) {
-      byte[] data;
+      byte[] data = null;
 
       synchronized( stream ) {
         // decode
-        ByteBuffer streamBuf = decodeStream();
+        ByteBuffer streamBuf = decodeStream( filterLimits );
         // ByteBuffer streamBuf = stream;
 
         // First try to use the array with no copying.  This can only
@@ -347,9 +344,20 @@ public class PDFObject {
     else if( type == STRING ) {
       return PDFStringUtil.asBytes( getStringValue() );
     }
+    else {
+      // wrong type
+      return null;
+    }
+  }
 
-    // wrong type
-    return null;
+  /**
+   * get the stream from this object.  Will return null if this
+   * object isn't a STREAM.
+   *
+   * @return the stream, or null, if this isn't a STREAM.
+   */
+  public byte[] getStream() throws IOException {
+    return getStream( emptySet() );
   }
 
   /**
@@ -359,12 +367,23 @@ public class PDFObject {
    * @return the buffer, or null, if this isn't a STREAM.
    */
   public ByteBuffer getStreamBuffer() throws IOException {
+    return getStreamBuffer( emptySet() );
+  }
+
+  /**
+   * get the stream from this object as a byte buffer.  Will return null if
+   * this object isn't a STREAM.
+   *
+   * @return the buffer, or null, if this isn't a STREAM.
+   */
+  public ByteBuffer getStreamBuffer( Set<String> filterLimits )
+    throws IOException {
     if( type == INDIRECT ) {
-      return dereference().getStreamBuffer();
+      return dereference().getStreamBuffer( filterLimits );
     }
     else if( type == STREAM && stream != null ) {
       synchronized( stream ) {
-        ByteBuffer streamBuf = decodeStream();
+        ByteBuffer streamBuf = decodeStream( filterLimits );
         // ByteBuffer streamBuf = stream;
         return streamBuf.duplicate();
       }
@@ -381,18 +400,20 @@ public class PDFObject {
   /**
    * Get the decoded stream value
    */
-  private ByteBuffer decodeStream() throws IOException {
+  private ByteBuffer decodeStream( Set<String> filterLimits )
+    throws IOException {
     ByteBuffer outStream = null;
 
     // first try the cache
-    if( decodedStream != null ) {
+    if( decodedStream != null && filterLimits.equals( decodedStreamFilterLimits ) ) {
       outStream = (ByteBuffer) decodedStream.get();
     }
 
     // no luck in the cache, do the actual decoding
     if( outStream == null ) {
       stream.rewind();
-      outStream = PDFDecoder.decodeStream( this, stream );
+      outStream = PDFDecoder.decodeStream( this, stream, filterLimits );
+      decodedStreamFilterLimits = new HashSet<>( filterLimits );
       decodedStream = new SoftReference<>( outStream );
     }
 
@@ -408,7 +429,7 @@ public class PDFObject {
       return dereference().getIntValue();
     }
     else if( type == NUMBER ) {
-      return ((Double) value).intValue();
+      return ((Number) value).intValue();
     }
 
     // wrong type
@@ -440,7 +461,7 @@ public class PDFObject {
       return dereference().getDoubleValue();
     }
     else if( type == NUMBER ) {
-      return (Double) value;
+      return ((Number) value).doubleValue();
     }
 
     // wrong type
@@ -494,10 +515,11 @@ public class PDFObject {
     else if( type == ARRAY ) {
       return (PDFObject[]) value;
     }
-
-    PDFObject[] ary = new PDFObject[ 1 ];
-    ary[ 0 ] = this;
-    return ary;
+    else {
+      PDFObject[] ary = new PDFObject[ 1 ];
+      ary[ 0 ] = this;
+      return ary;
+    }
   }
 
   /**
@@ -539,16 +561,16 @@ public class PDFObject {
    * this object is not a DICTIONARY or a STREAM, returns an
    * Iterator over the empty list.
    */
-  public Iterator<String> getDictKeys() throws IOException {
+  public Iterator getDictKeys() throws IOException {
     if( type == INDIRECT ) {
       return dereference().getDictKeys();
     }
     else if( type == DICTIONARY || type == STREAM ) {
-      return ((HashMap<String, Object>) value).keySet().iterator();
+      return ((Map) value).keySet().iterator();
     }
 
     // wrong type
-    return Collections.emptyIterator();
+    return emptyIterator();
   }
 
   /**
@@ -583,7 +605,7 @@ public class PDFObject {
     }
 
     // wrong type
-    throw new PDFParseException( "Could not find dictionary key type: " + key );
+    return null;
   }
 
   /**
@@ -609,9 +631,10 @@ public class PDFObject {
 
   public PDFDecrypter getDecrypter() {
     // PDFObjects without owners are always created as part of
-    // content instructions. Such objects will never have encryption
-    // applied to them, as the stream they're contained by is the
-    // unit of encryption. So, if someone asks for the decrypter for
+    // content instructions. Such an object will never have encryption
+    // applied to it, as the stream that contains it is the
+    // unit of encryption, with no further encryption being applied
+    // within. So if someone asks for the decrypter for
     // one of these in-stream objects, no decryption should
     // ever be applied. This can be seen with inline images.
     return owner != null ?
@@ -708,11 +731,9 @@ public class PDFObject {
           sb.append( "Untyped" );
         }
         sb.append( " dictionary. Keys:" );
-        Map hm = (HashMap) value;
-        Iterator it = hm.entrySet().iterator();
-        Map.Entry entry;
-        while( it.hasNext() ) {
-          entry = (Map.Entry) it.next();
+        final var hm = (Map) value;
+        for( final var o : hm.entrySet() ) {
+          final var entry = (Map.Entry) o;
           sb.append( "\n   " )
             .append( entry.getKey() )
             .append( "  " )
@@ -733,17 +754,6 @@ public class PDFObject {
       }
       else if( type == KEYWORD ) {
         return "Keyword: " + getStringValue();
-            /*	    } else if (type==IMAGE) {
-            StringBuffer sb= new StringBuffer();
-            java.awt.Image im= (java.awt.Image)stream;
-            sb.append("Image ("+im.getWidth(null)+"x"+im.getHeight(null)+",
-            with keys:");
-            HashMap hm= (HashMap)value;
-            Iterator it= hm.keySet().iterator();
-            while(it.hasNext()) {
-            sb.append(" "+(String)it.next());
-            }
-            return sb.toString();*/
       }
       else {
         return "Whoops!  big error!  Unknown type";
@@ -766,15 +776,10 @@ public class PDFObject {
       }
 
       if( obj == null || obj.value == null ) {
-        if( owner == null ) {
-          System.out.println( "Bad seed (owner==null)!  Object=" + this );
-        }
-
         if( owner != null ) {
           obj = owner.dereference( (PDFXref) value, getDecrypter() );
+          cache = new SoftReference<>( obj );
         }
-
-        cache = new SoftReference<>( obj );
       }
 
       return obj;
@@ -819,5 +824,12 @@ public class PDFObject {
     }
 
     return false;
+  }
+
+  /**
+   * Returns the root of this object.
+   */
+  public PDFObject getRoot() {
+    return owner.getRoot();
   }
 }

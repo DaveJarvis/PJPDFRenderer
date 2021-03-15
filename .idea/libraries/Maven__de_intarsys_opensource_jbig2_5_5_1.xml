@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: de.intarsys.opensource:jbig2:5.5.1">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/de/intarsys/opensource/jbig2/5.5.1/jbig2-5.5.1.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/de/intarsys/opensource/jbig2/5.5.1/jbig2-5.5.1-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/de/intarsys/opensource/jbig2/5.5.1/jbig2-5.5.1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

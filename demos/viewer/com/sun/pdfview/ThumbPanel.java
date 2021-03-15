@@ -124,7 +124,6 @@ public class ThumbPanel extends JPanel
                 needdrawn = -1;
             }
 
-
             // find an unfinished page
             int loop;
             for (loop = images.length; loop > 0; loop--) {
