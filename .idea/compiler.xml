@@ -6,11 +6,12 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="PDFRenderer" />
+        <module name="pjpdfrenderer" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="PDFRenderer" target="14" />
+      <module name="pjpdfrenderer" target="14" />
     </bytecodeTargetLevel>
   </component>
 </project>

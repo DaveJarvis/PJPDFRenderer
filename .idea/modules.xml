@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/PDFRenderer.iml" filepath="$PROJECT_DIR$/PDFRenderer.iml" />
       <module fileurl="file://$PROJECT_DIR$/demos/demos.iml" filepath="$PROJECT_DIR$/demos/demos.iml" />
+      <module fileurl="file://$PROJECT_DIR$/pjpdfrenderer.iml" filepath="$PROJECT_DIR$/pjpdfrenderer.iml" />
       <module fileurl="file://$PROJECT_DIR$/tests/samples/samples.iml" filepath="$PROJECT_DIR$/tests/samples/samples.iml" />
       <module fileurl="file://$PROJECT_DIR$/tools/tools.iml" filepath="$PROJECT_DIR$/tools/tools.iml" />
     </modules>
