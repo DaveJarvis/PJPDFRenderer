@@ -39,6 +39,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
+import static com.sun.pdfview.PDFImage.createImage;
+import static com.sun.pdfview.decode.PDFDecoder.DCT_FILTERS;
+import static com.sun.pdfview.decode.PDFDecoder.isLastFilter;
 import static java.awt.geom.GeneralPath.WIND_EVEN_ODD;
 
 /**
@@ -1104,7 +1107,8 @@ public class PDFParser extends BaseWatchable {
    *            the width, height and color space of the image.
    */
   private void doImage( PDFObject obj ) throws IOException {
-    cmds.addImage( PDFImage.createImage( obj, resources ) );
+    final boolean jpegDecode = isLastFilter( obj, DCT_FILTERS );
+    this.cmds.addImage( createImage( obj, this.resources, false ) );
   }
 
   /**
@@ -1270,7 +1274,7 @@ public class PDFParser extends BaseWatchable {
     PDFObject imObj = hm.get( "ImageMask" );
     if( imObj != null && imObj.getBooleanValue() ) {
       // [PATCHED by michal.busta@gmail.com] - default value according to PDF
-        // spec. is [0, 1]
+      // spec. is [0, 1]
       // there is no need to swap array - PDF image should handle this values
       Double[] decode = {(double) 0, 1.0};
 

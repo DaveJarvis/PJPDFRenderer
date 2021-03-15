@@ -98,7 +98,7 @@ public class PDFColorSpace {
    *
    * @param cs the Java ColorSpace
    */
-  protected PDFColorSpace( ColorSpace cs ) {
+  public PDFColorSpace( ColorSpace cs ) {
     this.cs = cs;
   }
 
