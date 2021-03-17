@@ -8,3 +8,5 @@ Additional forks:
 * https://github.com/clintel/PDFRenderer
 * https://git.gem-soft.com/opensource/PDFrenderer/
 
+See other forks for details.
+
